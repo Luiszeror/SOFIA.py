@@ -1,0 +1,29 @@
+# ── CAPA 2: RAG ──────────────────────────────────────────
+chromadb                # base de datos vectorial local
+sentence-transformers   # embeddings para indexar los libros
+pypdf                   # leer los PDFs de Think Python y Automate the Boring Stuff
+langchain               # orquestación del pipeline RAG
+langchain-community     # integraciones: ChromaDB, loaders de PDF
+langchain-openai        # conector LLM (OpenAI / compatible)
+
+# ── CAPA 1 & 4: LLM + Agentes ────────────────────────────
+openai                  # cliente oficial OpenAI (GPT-4o)
+langgraph               # orquestación de los 3 agentes
+tiktoken                # contar tokens antes de llamar al LLM
+
+# ── CAPA 3: Evaluador (stdlib, pero por si acaso) ─────────
+# ast, signal, io, time, traceback → vienen con Python, no se listan
+
+# ── CAPA 5: Dashboard ─────────────────────────────────────
+streamlit               # interfaz web del tutor y dashboard
+plotly                  # gráficas del dashboard del docente
+
+# ── Base de datos & persistencia ─────────────────────────
+sqlalchemy              # ORM para guardar perfiles de estudiantes
+alembic                 # migraciones de base de datos
+
+# ── Utilidades generales ──────────────────────────────────
+python-dotenv           # cargar API keys desde .env
+pydantic                # validación de los JSON estructurados
+tenacity                # reintentos automáticos en llamadas al LLM
+loguru                  # logging legible para desarrollo
