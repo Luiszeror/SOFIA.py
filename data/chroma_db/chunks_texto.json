@@ -1,0 +1,167 @@
+[
+  {
+    "chunk_id": "36887625",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 1: Variables y Tipos",
+    "pagina_aprox": 1,
+    "concepto": "variables_y_tipos",
+    "texto": "Fundamentos de Python\nCorpus de referencia para SOFIA.py — Sistema de Tutoría Socrática\nCubre: variables, condicionales, ciclos, funciones, listas, strings, diccionarios, recursión, clases, excepciones y archivos.\nCapítulo 1: Variables y Tipos de Datos\nUna variable es un nombre que referencia un valor almacenado en memoria. En Python no se declara el tipo — se infiere\nautomáticamente según el valor asignado.\nTipos básicos\nLos tipos fundamentales en Python son: int (enteros), float (decimales), str (cadenas de texto), bool (True/False) y\nNoneType (valor nulo).\nx = 10          # int - número entero\nprecio = 3.14   # float - número decimal\nnombre = \"Ana\"  # str - cadena de texto\nactivo = True   # bool - valor booleano\nvacio = None    # NoneType - sin valor\n# Verificar el tipo de una variable\nprint(type(x))       # <class 'int'>\nprint(type(nombre))  # <class 'str'>\nConversión de tipos\nPython permite convertir entre tipos usando funciones integradas: int(), float(), str(), bool(). Esto se llama casting o\nconversión de tipo.\nedad_texto = \"25\"\nedad_numero = int(edad_texto)   # str → int\nprecio = float(\"3.99\")          # str → float\ntexto = str(100)                # int → str\n# Error común: sumar str con int sin convertir\n# print(\"Edad: \" + 25)  # TypeError\nprint(\"Edad: \" + str(25))       # correcto\nReglas de nombres de variables\nLos nombres de variables deben comenzar con letra o guión bajo, pueden contener letras, números y guiones bajos, y\nson sensibles a mayúsculas. Por convención se usa snake_case.\nnombre_completo = \"Luis\"   # correcto - snake_case\n_privado = 42              # correcto - comienza con _\n# 2variable = 10           # incorrecto - comienza con número\n# mi-var = 5               # incorrecto - guión medio no permitido",
+    "num_tokens": 438,
+    "posicion": 0
+  },
+  {
+    "chunk_id": "a9ce9e20",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 2: Condicionales",
+    "pagina_aprox": 2,
+    "concepto": "condicionales",
+    "texto": "Capítulo 2: Condicionales\nLas estructuras condicionales permiten ejecutar código solo si se cumple una condición. Python usa if, elif y else con\nindentación obligatoria de 4 espacios.\nEstructura básica if-elif-else\nedad = 18\nif edad >= 18:\n    print(\"Mayor de edad\")\nelif edad >= 13:\n    print(\"Adolescente\")\nelse:\n    print(\"Niño\")\n# Operadores de comparación: == != < > <= >=\n# Operadores lógicos: and, or, not\nnota = 75\nif nota >= 90 and nota <= 100:\n    print(\"Excelente\")\nelif nota >= 60 or nota == 55:\n    print(\"Aprobado\")\nelse:\n    print(\"Reprobado\")\nOperador ternario\nPython tiene una forma compacta de escribir un if-else en una sola línea llamada expresión condicional o operador\nternario.\nx = 10\nresultado = \"par\" if x % 2 == 0 else \"impar\"\nprint(resultado)  # par\n# Equivalente a:\nif x % 2 == 0:\n    resultado = \"par\"\nelse:\n    resultado = \"impar\" \nErrores frecuentes en condicionales\nEl error más común es usar = (asignación) en lugar de == (comparación). Otro error es olvidar los dos puntos al final de\nif/elif/else.\n# ERROR: asignación en lugar de comparación\n# if x = 10:  # SyntaxError\n# CORRECTO:\nif x == 10:\n    print(\"x vale diez\")\n# ERROR: sin dos puntos\n# if x > 0",
+    "num_tokens": 297,
+    "posicion": 1
+  },
+  {
+    "chunk_id": "228ca8cb",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 2: Condicionales",
+    "pagina_aprox": 3,
+    "concepto": "condicionales",
+    "texto": "#     print(\"positivo\")  # SyntaxError\n# CORRECTO:\nif x > 0:\n    print(\"positivo\")",
+    "num_tokens": 20,
+    "posicion": 2
+  },
+  {
+    "chunk_id": "f5319f6f",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 3: Ciclos",
+    "pagina_aprox": 4,
+    "concepto": "ciclos",
+    "texto": "Capítulo 3: Ciclos e Iteración\nLos ciclos permiten repetir un bloque de código. Python tiene dos tipos: for (para iterar sobre una secuencia) y while\n(mientras se cumpla una condición).\nCiclo for con range()\nrange(inicio, fin, paso) genera una secuencia de números. El valor final no se incluye. Es la forma más común de repetir\ncódigo un número fijo de veces.\n# Imprimir del 1 al 5\nfor i in range(1, 6):\n    print(i)\n# Salida: 1 2 3 4 5\n# range con paso\nfor i in range(0, 10, 2):\n    print(i)\n# Salida: 0 2 4 6 8\n# Iterar sobre una lista\nfrutas = [\"manzana\", \"pera\", \"uva\"]\nfor fruta in frutas:\n    print(fruta)\nCiclo while\nEl ciclo while repite el bloque mientras la condición sea verdadera. Es fundamental tener una condición de parada para\nevitar ciclos infinitos.\ncontador = 0\nwhile contador < 5:\n    print(contador)\n    contador += 1   # condición de parada: incrementar\n# break termina el ciclo anticipadamente\n# continue salta a la siguiente iteración\nfor i in range(10):\n    if i == 5:\n        break       # para en 5\n    if i % 2 == 0:\n        continue    # salta los pares\n    print(i)        # imprime: 1 3\nCiclo infinito — error común\nUn ciclo while sin condición de parada corre indefinidamente. Siempre verifica que la variable de control cambie dentro\ndel ciclo.\n# ERROR: ciclo infinito\n# x = 1\n# while x > 0:\n#     print(x)    # x nunca cambia → loop infinito\n# CORRECTO:",
+    "num_tokens": 347,
+    "posicion": 3
+  },
+  {
+    "chunk_id": "2311c5df",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 3: Ciclos",
+    "pagina_aprox": 5,
+    "concepto": "ciclos",
+    "texto": "x = 1\nwhile x > 0:\n    print(x)\n    x -= 1        # x decrece → el ciclo para",
+    "num_tokens": 19,
+    "posicion": 4
+  },
+  {
+    "chunk_id": "ee60405f",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 4: Funciones",
+    "pagina_aprox": 6,
+    "concepto": "funciones",
+    "texto": "Capítulo 4: Funciones\nUna función es un bloque de código reutilizable que realiza una tarea específica. Se define con def y puede recibir\nparámetros y retornar valores con return.\nDefinición y llamada\ndef saludar(nombre):\n    \"\"\"Retorna un saludo personalizado.\"\"\"\n    return \"Hola, \" + nombre\n# Llamar la función\nresultado = saludar(\"Luis\")\nprint(resultado)  # Hola, Luis\n# Función con valor por defecto\ndef potencia(base, exponente=2):\n    return base ** exponente\nprint(potencia(3))    # 9  (exponente=2 por defecto)\nprint(potencia(3, 3)) # 27\nReturn vs Print\nreturn devuelve un valor que puede usarse en el programa. print solo muestra en pantalla pero no retorna nada (retorna\nNone). Este es uno de los errores más comunes en principiantes.\ndef doble_print(x):\n    print(x * 2)    # muestra pero no retorna\ndef doble_return(x):\n    return x * 2    # retorna el valor\n# Con print: no puedes usar el resultado\nresultado = doble_print(5)  # muestra 10\nprint(resultado)             # None ← no hay valor\n# Con return: puedes usar el resultado\nresultado = doble_return(5)\nprint(resultado)             # 10 ← valor real\nprint(resultado + 1)         # 11 ← se puede operar\nScope de variables\nLas variables definidas dentro de una función son locales — no existen fuera de ella. Las variables globales existen en\ntodo el programa pero modificarlas dentro de una función requiere la palabra clave global.\nx = 10  # variable global\ndef mi_funcion():\n    x = 20  # variable LOCAL (no modifica la global)\n    print(x)  # 20\nmi_funcion()\nprint(x)  # 10 ← la global no cambió",
+    "num_tokens": 391,
+    "posicion": 5
+  },
+  {
+    "chunk_id": "eb74443f",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 4: Funciones",
+    "pagina_aprox": 7,
+    "concepto": "funciones",
+    "texto": "# Para modificar la global:\ndef modificar_global():\n    global x\n    x = 99\nmodificar_global()\nprint(x)  # 99",
+    "num_tokens": 27,
+    "posicion": 6
+  },
+  {
+    "chunk_id": "d3b236bd",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 5: Listas",
+    "pagina_aprox": 8,
+    "concepto": "listas",
+    "texto": "Capítulo 5: Listas\nUna lista es una colección ordenada y mutable de elementos. Puede contener elementos de diferentes tipos. Los índices\ncomienzan en 0.\nOperaciones básicas\nnumeros = [1, 2, 3, 4, 5]\n# Acceso por índice (empieza en 0)\nprint(numeros[0])   # 1\nprint(numeros[-1])  # 5 (último elemento)\n# Slicing [inicio:fin] (fin no se incluye)\nprint(numeros[1:3]) # [2, 3]\nprint(numeros[:3])  # [1, 2, 3]\nprint(numeros[2:])  # [3, 4, 5]\n# Métodos principales\nnumeros.append(6)       # agrega al final\nnumeros.insert(0, 0)    # inserta en posición\nnumeros.pop()           # elimina y retorna el último\nnumeros.remove(3)       # elimina el valor 3\nnumeros.sort()          # ordena en su lugar\nlargo = len(numeros)    # longitud de la lista\nListas y funciones — mutabilidad\nLas listas son mutables: si pasas una lista a una función, los cambios dentro de la función afectan la lista original. Esto es\ndiferente a los tipos simples como int o str.\ndef agregar_elemento(lista, elemento):\n    lista.append(elemento)  # modifica la lista original\nmi_lista = [1, 2, 3]\nagregar_elemento(mi_lista, 4)\nprint(mi_lista)  # [1, 2, 3, 4] ← cambió afuera\n# Comprensión de listas\ncuadrados = [x**2 for x in range(1, 6)]\nprint(cuadrados)  # [1, 4, 9, 16, 25]\npares = [x for x in range(10) if x % 2 == 0]\nprint(pares)  # [0, 2, 4, 6, 8]",
+    "num_tokens": 329,
+    "posicion": 7
+  },
+  {
+    "chunk_id": "f6511df4",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 6: Strings",
+    "pagina_aprox": 9,
+    "concepto": "strings",
+    "texto": "Capítulo 6: Strings (Cadenas de Texto)\nUn string es una secuencia inmutable de caracteres. Python tiene muchos métodos para manipular strings. Los strings se\npueden indexar y hacer slicing igual que las listas.\nMétodos principales\ntexto = \"  Hola Mundo  \"\nprint(texto.strip())        # \"Hola Mundo\" (quita espacios)\nprint(texto.lower())        # \"  hola mundo  \"\nprint(texto.upper())        # \"  HOLA MUNDO  \"\nprint(texto.replace(\"Hola\", \"Adiós\"))  # \"  Adiós Mundo  \"\npalabras = \"uno,dos,tres\".split(\",\")\nprint(palabras)             # ['uno', 'dos', 'tres']\nprint(\",\".join(palabras))   # \"uno,dos,tres\"\nprint(len(\"Python\"))        # 6\nprint(\"Py\" in \"Python\")     # True\nFormateo de strings\nnombre = \"Luis\"\nedad = 20\n# f-strings (recomendado, Python 3.6+)\nprint(f\"Me llamo {nombre} y tengo {edad} años\")\n# format()\nprint(\"Me llamo {} y tengo {} años\".format(nombre, edad))\n# Concatenación (menos eficiente)\nprint(\"Me llamo \" + nombre + \" y tengo \" + str(edad) + \" años\")\n# Strings multilínea\nmensaje = \"\"\"\nPrimera línea\nSegunda línea\nTercera línea\n\"\"\"",
+    "num_tokens": 262,
+    "posicion": 8
+  },
+  {
+    "chunk_id": "2398802a",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 7: Diccionarios",
+    "pagina_aprox": 10,
+    "concepto": "diccionarios",
+    "texto": "Capítulo 7: Diccionarios\nUn diccionario es una colección de pares clave:valor. Las claves deben ser únicas e inmutables (strings, números,\ntuplas). Los valores pueden ser cualquier tipo.\nOperaciones básicas\nestudiante = {\n    \"nombre\": \"Luis\",\n    \"edad\": 20,\n    \"notas\": [85, 90, 78]\n}\n# Acceso\nprint(estudiante[\"nombre\"])          # Luis\nprint(estudiante.get(\"email\", \"N/A\")) # N/A (valor por defecto)\n# Modificar y agregar\nestudiante[\"edad\"] = 21\nestudiante[\"email\"] = \"luis@uptc.edu.co\"\n# Eliminar\ndel estudiante[\"email\"]\nvalor = estudiante.pop(\"edad\")  # elimina y retorna\n# Iterar\nfor clave, valor in estudiante.items():\n    print(f\"{clave}: {valor}\")\nprint(list(estudiante.keys()))    # lista de claves\nprint(list(estudiante.values()))  # lista de valores\nVerificar existencia de claves\ndatos = {\"a\": 1, \"b\": 2}\n# Forma correcta de verificar si existe una clave\nif \"a\" in datos:\n    print(datos[\"a\"])\n# Usar get() evita KeyError\nprint(datos.get(\"c\"))        # None (no lanza error)\nprint(datos.get(\"c\", 0))    # 0 (valor por defecto)\n# ERROR común: acceder a clave inexistente\n# print(datos[\"c\"])  # KeyError: 'c'",
+    "num_tokens": 280,
+    "posicion": 9
+  },
+  {
+    "chunk_id": "d6ccbdcc",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 8: Recursión",
+    "pagina_aprox": 11,
+    "concepto": "recursion",
+    "texto": "Capítulo 8: Recursión\nUna función recursiva es aquella que se llama a sí misma. Toda función recursiva necesita: un caso base (que detiene la\nrecursión) y un caso recursivo (que reduce el problema).\nFactorial y Fibonacci\n# Factorial: n! = n * (n-1)!\ndef factorial(n):\n    if n == 0 or n == 1:   # caso base\n        return 1\n    return n * factorial(n - 1)   # caso recursivo\nprint(factorial(5))  # 120\n# Fibonacci: fib(n) = fib(n-1) + fib(n-2)\ndef fibonacci(n):\n    if n <= 1:             # caso base\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)  # recursivo\nprint(fibonacci(6))  # 8\nTraza de recursión — cómo funciona\n# factorial(3) se ejecuta así:\n# factorial(3) → 3 * factorial(2)\n#                    factorial(2) → 2 * factorial(1)\n#                                       factorial(1) → 1  (caso base)\n#                    factorial(2) → 2 * 1 = 2\n# factorial(3) → 3 * 2 = 6\n# Sin caso base → RecursionError (stack overflow)\ndef infinita(n):\n    return infinita(n - 1)  # nunca para\n# infinita(1)  # RecursionError: maximum recursion depth exceeded",
+    "num_tokens": 267,
+    "posicion": 10
+  },
+  {
+    "chunk_id": "53dd13d5",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 9: Clases",
+    "pagina_aprox": 12,
+    "concepto": "clases",
+    "texto": "Capítulo 9: Clases y Objetos\nUna clase es una plantilla para crear objetos. Un objeto es una instancia de una clase. La programación orientada a\nobjetos (OOP) organiza el código en torno a objetos que tienen atributos (datos) y métodos (comportamiento).\nDefinición básica\nclass Estudiante:\n    \"\"\"Representa un estudiante universitario.\"\"\"\n    def __init__(self, nombre, codigo):\n        \"\"\"Constructor: se ejecuta al crear el objeto.\"\"\"\n        self.nombre = nombre    # atributo de instancia\n        self.codigo = codigo\n        self.notas  = []\n    def agregar_nota(self, nota):\n        \"\"\"Agrega una nota a la lista.\"\"\"\n        self.notas.append(nota)\n    def promedio(self):\n        \"\"\"Calcula el promedio de notas.\"\"\"\n        if not self.notas:\n            return 0\n        return sum(self.notas) / len(self.notas)\n    def __str__(self):\n        \"\"\"Representación legible del objeto.\"\"\"\n        return f\"{self.nombre} ({self.codigo})\"\n# Crear instancias\ne1 = Estudiante(\"Luis\", \"20231234\")\ne1.agregar_nota(85)\ne1.agregar_nota(90)\nprint(e1.promedio())  # 87.5\nprint(e1)             # Luis (20231234)\nHerencia\nclass Persona:\n    def __init__(self, nombre):\n        self.nombre = nombre\n    def saludar(self):\n        return f\"Hola, soy {self.nombre}\"\nclass Profesor(Persona):   # hereda de Persona\n    def __init__(self, nombre, materia):\n        super().__init__(nombre)   # llama al constructor padre\n        self.materia = materia\n    def presentar(self):\n        return f\"{self.saludar()}, dicto {self.materia}\"\np = Profesor(\"Carlos\", \"Python\")",
+    "num_tokens": 388,
+    "posicion": 11
+  },
+  {
+    "chunk_id": "bcf043ca",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 9: Clases",
+    "pagina_aprox": 13,
+    "concepto": "clases",
+    "texto": "print(p.presentar())\n# Hola, soy Carlos, dicto Python",
+    "num_tokens": 13,
+    "posicion": 12
+  },
+  {
+    "chunk_id": "1b8b843d",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 10: Excepciones",
+    "pagina_aprox": 14,
+    "concepto": "excepciones",
+    "texto": "Capítulo 10: Manejo de Excepciones\nLas excepciones son errores que ocurren durante la ejecución. Python usa try/except para capturarlas y manejarlas sin\nque el programa se detenga abruptamente.\ntry / except / finally\n# Estructura básica\ntry:\n    numero = int(input(\"Ingresa un número: \"))\n    resultado = 10 / numero\n    print(f\"Resultado: {resultado}\")\nexcept ValueError:\n    print(\"Error: debes ingresar un número válido\")\nexcept ZeroDivisionError:\n    print(\"Error: no se puede dividir entre cero\")\nexcept Exception as e:\n    print(f\"Error inesperado: {e}\")\nfinally:\n    print(\"Este bloque siempre se ejecuta\")\nExcepciones más comunes\n# IndexError: índice fuera de rango\nlista = [1, 2, 3]\ntry:\n    print(lista[99])\nexcept IndexError as e:\n    print(f\"IndexError: {e}\")\n# KeyError: clave no existe en diccionario\nd = {\"a\": 1}\ntry:\n    print(d[\"b\"])\nexcept KeyError as e:\n    print(f\"KeyError: {e}\")\n# TypeError: operación con tipos incompatibles\ntry:\n    print(\"texto\" + 5)\nexcept TypeError as e:\n    print(f\"TypeError: {e}\")\n# Lanzar excepción manualmente\ndef dividir(a, b):\n    if b == 0:\n        raise ValueError(\"El divisor no puede ser cero\")\n    return a / b",
+    "num_tokens": 291,
+    "posicion": 13
+  },
+  {
+    "chunk_id": "a8be46cf",
+    "libro": "corpus_python",
+    "titulo_libro": "Fundamentos de Python — SOFIA",
+    "capitulo": "Cap 11: Archivos",
+    "pagina_aprox": 15,
+    "concepto": "archivos",
+    "texto": "Capítulo 11: Manejo de Archivos\nPython puede leer y escribir archivos de texto usando la función open(). Se recomienda usar with open() para garantizar\nque el archivo se cierre correctamente incluso si ocurre un error.\nLeer y escribir archivos\n# Escribir archivo\nwith open(\"datos.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"Primera línea\\n\")\n    f.write(\"Segunda línea\\n\")\n# Leer archivo completo\nwith open(\"datos.txt\", \"r\", encoding=\"utf-8\") as f:\n    contenido = f.read()\n    print(contenido)\n# Leer línea por línea\nwith open(\"datos.txt\", \"r\", encoding=\"utf-8\") as f:\n    for linea in f:\n        print(linea.strip())\n# Agregar contenido sin borrar (modo \"a\")\nwith open(\"datos.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"Tercera línea\\n\")\nModos de apertura\n# Modos principales:\n# \"r\"  → leer (error si no existe)\n# \"w\"  → escribir (crea o sobreescribe)\n# \"a\"  → agregar al final\n# \"r+\" → leer y escribir\nimport os\n# Verificar si existe antes de leer\nif os.path.exists(\"datos.txt\"):\n    with open(\"datos.txt\", \"r\") as f:\n        print(f.read())\nelse:\n    print(\"El archivo no existe\")\n# Manejo seguro con excepciones\ntry:\n    with open(\"archivo.txt\", \"r\") as f:\n        print(f.read())\nexcept FileNotFoundError:\n    print(\"Archivo no encontrado\")",
+    "num_tokens": 313,
+    "posicion": 14
+  }
+]

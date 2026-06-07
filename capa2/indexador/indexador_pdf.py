@@ -267,10 +267,10 @@ class IndexadorPDF:
         return chunks
 
     # ── PASO 3: Guardar en ChromaDB ───────────────────────────────────────
-    def indexar_en_chromadb(self, chunks: list[Chunk], coleccion_nombre: str = "corpus_python"):
+    def _preparar_chromadb(self, coleccion_nombre: str = "corpus_python"):
         """
-        Genera embeddings e indexa los chunks en ChromaDB.
-        Usa sentence-transformers para los embeddings (corre local, sin API key).
+        Inicializa ChromaDB y el modelo de embeddings una sola vez.
+        Retorna (cliente, coleccion, modelo) para reutilizar durante todo el pipeline.
         """
         try:
             import chromadb
@@ -286,7 +286,6 @@ class IndexadorPDF:
         self._log("Conectando a ChromaDB...")
         cliente = chromadb.PersistentClient(path=str(self.directorio_db))
 
-        # Eliminar colección existente para re-indexar limpio
         try:
             cliente.delete_collection(coleccion_nombre)
         except Exception:
@@ -295,17 +294,32 @@ class IndexadorPDF:
             name=coleccion_nombre,
             metadata={"hnsw:space": "cosine"},
         )
+        return coleccion, modelo
 
-        # Indexar en lotes de 50
-        LOTE = 50
-        total = len(chunks)
-        self._log(f"Indexando {total} chunks en lotes de {LOTE}...")
+    def _indexar_lote_chromadb(self, chunks: list[Chunk], coleccion, modelo, contador_global: list):
+        """
+        Indexa un lote pequeño de chunks directamente en ChromaDB y los descarta.
+        contador_global es una lista de un elemento [n] para llevar el total acumulado.
+        """
+        try:
+            from tqdm import tqdm
+            usar_tqdm = True
+        except ImportError:
+            usar_tqdm = False
 
-        for i in range(0, total, LOTE):
-            lote = chunks[i : i + LOTE]
-            textos    = [c.texto for c in lote]
-            ids       = [c.chunk_id for c in lote]
-            metadatos = [
+        LOTE = 10
+        total_lote = len(chunks)
+        rango = range(0, total_lote, LOTE)
+
+        if usar_tqdm:
+            rango = tqdm(rango, desc="    Embeddings", unit="lote",
+                         bar_format="    {desc}: {bar:30} {n_fmt}/{total_fmt} lotes  [{elapsed}]")
+
+        for i in rango:
+            lote = chunks[i: i + LOTE]
+            textos     = [c.texto for c in lote]
+            ids        = [c.chunk_id for c in lote]
+            metadatas  = [
                 {
                     "libro":        c.libro,
                     "titulo_libro": c.titulo_libro,
@@ -318,20 +332,38 @@ class IndexadorPDF:
                 for c in lote
             ]
             embeddings = modelo.encode(textos, show_progress_bar=False).tolist()
-
             coleccion.add(
                 ids        = ids,
                 documents  = textos,
-                metadatos  = metadatos,
+                metadatas  = metadatas,
                 embeddings = embeddings,
             )
-            if self.verbose:
-                pct = min(100, round((i + len(lote)) / total * 100))
-                print(f"    {pct}% ({i + len(lote)}/{total} chunks)", end="\r")
+            contador_global[0] += len(lote)
+            if self.verbose and not usar_tqdm:
+                print(f"    {contador_global[0]} chunks indexados...", end="\r")
 
-        print()
-        self._log(f"✓ {total} chunks indexados en ChromaDB → {self.directorio_db}")
-        return coleccion
+    # ── PASO 4: Guardar índice JSON de respaldo ───────────────────────────
+    def guardar_indice_json(self, chunks: list[Chunk], nombre: str = "indice_rag.json"):
+        """
+        Guarda un índice JSON con los metadatos de todos los chunks.
+        Sirve como respaldo y para debug sin necesitar ChromaDB.
+        """
+        ruta = self.directorio_db / nombre
+        datos = {
+            "total_chunks": len(chunks),
+            "timestamp":    time.strftime("%Y-%m-%d %H:%M:%S"),
+            "chunk_size":   self.chunk_size,
+            "chunk_overlap": self.chunk_overlap,
+            "libros": list({c.libro for c in chunks}),
+            "conceptos": list({c.concepto for c in chunks}),
+            "chunks": [
+                {k: v for k, v in asdict(c).items() if k != "texto"}
+                for c in chunks
+            ],
+        }
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(datos, f, ensure_ascii=False, indent=2)
+        self._log(f"✓ Índice JSON guardado → {ruta}")
 
     # ── PASO 4: Guardar índice JSON de respaldo ───────────────────────────
     def guardar_indice_json(self, chunks: list[Chunk], nombre: str = "indice_rag.json"):
@@ -359,10 +391,12 @@ class IndexadorPDF:
     # ── Pipeline completo ─────────────────────────────────────────────────
     def indexar_directorio(self) -> dict:
         """
-        Punto de entrada principal.
-        Lee todos los PDFs del directorio y los indexa.
-        
-        Retorna un resumen del proceso.
+        Punto de entrada principal — versión streaming para 8GB RAM.
+
+        En lugar de acumular todos los chunks en memoria antes de indexar,
+        procesa cada PDF en lotes de páginas e indexa en ChromaDB
+        inmediatamente, descartando los chunks al terminar cada lote.
+        Nunca hay más de ~30 páginas en RAM al mismo tiempo.
         """
         pdfs = list(self.directorio_pdfs.glob("*.pdf"))
         if not pdfs:
@@ -372,43 +406,95 @@ class IndexadorPDF:
             )
 
         self._log(f"PDFs encontrados: {[p.name for p in pdfs]}")
-        todos_chunks = []
+
+        # ── Inicializar ChromaDB y modelo UNA sola vez ────────────────────
+        chromadb_ok = False
+        coleccion   = None
+        modelo      = None
+        try:
+            coleccion, modelo = self._preparar_chromadb()
+            chromadb_ok = True
+        except ImportError as e:
+            self._log(f"⚠ ChromaDB no disponible ({e}). Solo se guardará JSON.")
+
+        # ── Procesar cada PDF en lotes de páginas ─────────────────────────
+        PAGINAS_POR_LOTE = 30
+        contador_global  = [0]       # lista para pasar por referencia
+        resumen_libros   = []
+        chunks_para_json = []        # solo metadatos, sin texto — para el JSON
 
         for pdf in pdfs:
             libro_id, titulo_libro = _detectar_libro(pdf.name)
             self._log(f"\nProcesando: {titulo_libro}")
 
-            paginas = self.extraer_texto_pdf(pdf)
-            chunks  = self.crear_chunks(paginas, libro_id, titulo_libro)
-            todos_chunks.extend(chunks)
+            paginas         = self.extraer_texto_pdf(pdf)
+            chunks_totales  = 0
 
-        self._log(f"\nTotal: {len(todos_chunks)} chunks de {len(pdfs)} libros")
+            try:
+                from tqdm import tqdm
+                iter_paginas = tqdm(
+                    range(0, len(paginas), PAGINAS_POR_LOTE),
+                    desc=f"  {titulo_libro[:30]}",
+                    unit="lote",
+                    bar_format="  {desc}: {bar:25} lote {n_fmt}/{total_fmt}  [{elapsed}<{remaining}]",
+                )
+            except ImportError:
+                iter_paginas = range(0, len(paginas), PAGINAS_POR_LOTE)
 
-        # Guardar índice JSON (siempre, sin dependencias externas)
-        self.guardar_indice_json(todos_chunks)
+            for i in iter_paginas:
+                lote_paginas = paginas[i: i + PAGINAS_POR_LOTE]
+                fin_lote     = min(i + PAGINAS_POR_LOTE, len(paginas))
+                if not hasattr(iter_paginas, 'update'):
+                    self._log(f"  Páginas {i+1}–{fin_lote} de {len(paginas)}...")
 
-        # Intentar indexar en ChromaDB (requiere instalación)
-        try:
-            self.indexar_en_chromadb(todos_chunks)
-            chromadb_ok = True
-        except ImportError as e:
-            self._log(f"⚠ ChromaDB no disponible ({e}). Solo se guardó el índice JSON.")
-            chromadb_ok = False
+                chunks_lote = self.crear_chunks(lote_paginas, libro_id, titulo_libro)
+                chunks_totales += len(chunks_lote)
+
+                # Indexar en ChromaDB inmediatamente y descartar
+                if chromadb_ok:
+                    self._indexar_lote_chromadb(chunks_lote, coleccion, modelo, contador_global)
+
+                # Guardar solo metadatos para el JSON (sin texto = poco peso)
+                for c in chunks_lote:
+                    chunks_para_json.append(
+                        {k: v for k, v in asdict(c).items() if k != "texto"}
+                    )
+
+                # Liberar memoria del lote
+                del chunks_lote
+                del lote_paginas
+
+            self._log(f"  → {chunks_totales} chunks de {titulo_libro}")
+            resumen_libros.append({
+                "id":     libro_id,
+                "titulo": titulo_libro,
+                "chunks": chunks_totales,
+            })
+
+        # ── Guardar índice JSON de metadatos ──────────────────────────────
+        print()
+        self._log(f"\nTotal indexado: {contador_global[0]} chunks de {len(pdfs)} libros")
+        ruta_json = self.directorio_db / "indice_rag.json"
+        datos_json = {
+            "total_chunks":  contador_global[0],
+            "timestamp":     time.strftime("%Y-%m-%d %H:%M:%S"),
+            "chunk_size":    self.chunk_size,
+            "chunk_overlap": self.chunk_overlap,
+            "libros":        [r["id"] for r in resumen_libros],
+            "chunks":        chunks_para_json,
+        }
+        with open(ruta_json, "w", encoding="utf-8") as f:
+            json.dump(datos_json, f, ensure_ascii=False, indent=2)
+        self._log(f"✓ Índice JSON guardado → {ruta_json}")
+
+        if chromadb_ok:
+            self._log(f"✓ ChromaDB lista en → {self.directorio_db}")
 
         resumen = {
-            "pdfs_procesados":  len(pdfs),
-            "total_chunks":     len(todos_chunks),
-            "chromadb_ok":      chromadb_ok,
-            "directorio_db":    str(self.directorio_db),
-            "libros": [
-                {
-                    "id":     libro_id,
-                    "titulo": titulo_libro,
-                    "chunks": sum(1 for c in todos_chunks if c.libro == libro_id),
-                }
-                for libro_id, titulo_libro in {
-                    _detectar_libro(p.name) for p in pdfs
-                }
-            ],
+            "pdfs_procesados": len(pdfs),
+            "total_chunks":    contador_global[0],
+            "chromadb_ok":     chromadb_ok,
+            "directorio_db":   str(self.directorio_db),
+            "libros":          resumen_libros,
         }
         return resumen

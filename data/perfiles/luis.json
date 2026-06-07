@@ -1,0 +1,29 @@
+{
+  "estudiante_id": "luis",
+  "nombre": "Luis",
+  "sesiones": 0,
+  "interacciones": 1,
+  "errores_por_concepto": {
+    "ciclos": 1
+  },
+  "intentos_por_concepto": {
+    "ciclos": [
+      1
+    ]
+  },
+  "errores_frecuentes": [
+    "ciclos"
+  ],
+  "intentos_promedio": 1.0,
+  "score_riesgo": 1.1,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-07 16:29",
+  "historial_errores": [
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_logico",
+      "intento": 1,
+      "timestamp": "2026-06-07 16:29"
+    }
+  ]
+}

@@ -427,6 +427,102 @@ class EvaluadorPython:
             },
         )
 
+
+    def evaluar_libre(
+        self,
+        codigo: str,
+        concepto: str = "general",
+        intento_numero: int = 1,
+    ) -> ResultadoEvaluacion:
+        """
+        Evalúa código sin casos de prueba.
+        Solo detecta errores de sintaxis, runtime y timeout.
+        Si el código corre sin errores → CORRECTO.
+        Ideal para exploración libre del estudiante.
+        """
+        import textwrap as _textwrap
+        import time as _time
+        import ast as _ast
+
+        t0 = _time.perf_counter()
+        codigo = _textwrap.dedent(codigo).strip()
+
+        # Seguridad
+        try:
+            arbol = _ast.parse(codigo)
+        except SyntaxError as e:
+            return self._resultado_sintaxis(e, concepto, intento_numero,
+                                            _time.perf_counter() - t0)
+
+        analizador = AnalizadorSeguridad()
+        analizador.visit(arbol)
+        if analizador.violaciones:
+            return ResultadoEvaluacion(
+                tipo_error        = TipoError.SEGURIDAD,
+                concepto          = concepto,
+                mensaje_tecnico   = " | ".join(analizador.violaciones),
+                linea_error       = None,
+                casos_ejecutados  = 0,
+                casos_pasados     = 0,
+                resultados_casos  = [],
+                tiempo_total_ms   = round((_time.perf_counter() - t0) * 1000, 2),
+                intento_numero    = intento_numero,
+                sugerencia_socratica = _get_sugerencia(TipoError.SEGURIDAD),
+            )
+
+        # Ejecutar en sandbox
+        res = self.sandbox.ejecutar(codigo)
+
+        t_ms = round((_time.perf_counter() - t0) * 1000, 2)
+
+        if res["tipo_excepcion"] == "TimeoutError":
+            return ResultadoEvaluacion(
+                tipo_error        = TipoError.TIMEOUT,
+                concepto          = concepto,
+                mensaje_tecnico   = res["excepcion"],
+                linea_error       = None,
+                casos_ejecutados  = 0,
+                casos_pasados     = 0,
+                resultados_casos  = [],
+                tiempo_total_ms   = t_ms,
+                intento_numero    = intento_numero,
+                sugerencia_socratica = _get_sugerencia(TipoError.TIMEOUT),
+            )
+
+        if res["excepcion"]:
+            tipo_exc = res["tipo_excepcion"] or "Exception"
+            if "SyntaxError" in tipo_exc:
+                return self._resultado_sintaxis_str(res, concepto, intento_numero,
+                                                    _time.perf_counter() - t0)
+            return ResultadoEvaluacion(
+                tipo_error        = TipoError.RUNTIME,
+                concepto          = concepto,
+                mensaje_tecnico   = res["excepcion"],
+                linea_error       = res["linea_error"],
+                casos_ejecutados  = 0,
+                casos_pasados     = 0,
+                resultados_casos  = [],
+                tiempo_total_ms   = t_ms,
+                intento_numero    = intento_numero,
+                sugerencia_socratica = _get_sugerencia(TipoError.RUNTIME, tipo_exc),
+            )
+
+        # Sin errores → CORRECTO
+        stdout = res["stdout"].strip()
+        return ResultadoEvaluacion(
+            tipo_error        = TipoError.CORRECTO,
+            concepto          = concepto,
+            mensaje_tecnico   = f"Código ejecutado sin errores.{(' Salida: ' + stdout) if stdout else ''}",
+            linea_error       = None,
+            casos_ejecutados  = 0,
+            casos_pasados     = 0,
+            resultados_casos  = [],
+            tiempo_total_ms   = t_ms,
+            intento_numero    = intento_numero,
+            sugerencia_socratica = _get_sugerencia(TipoError.CORRECTO),
+            metadata          = {"stdout": stdout},
+        )
+
     def _resultado_sintaxis(self, e: SyntaxError, concepto, intento, t) -> ResultadoEvaluacion:
         return ResultadoEvaluacion(
             tipo_error           = TipoError.SINTAXIS,

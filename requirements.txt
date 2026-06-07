@@ -27,3 +27,4 @@ python-dotenv           # cargar API keys desde .env
 pydantic                # validación de los JSON estructurados
 tenacity                # reintentos automáticos en llamadas al LLM
 loguru                  # logging legible para desarrollo
+
