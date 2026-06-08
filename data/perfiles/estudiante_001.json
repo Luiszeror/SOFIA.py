@@ -2,10 +2,10 @@
   "estudiante_id": "estudiante_001",
   "nombre": "Estudiante",
   "sesiones": 0,
-  "interacciones": 6,
+  "interacciones": 11,
   "errores_por_concepto": {
-    "ciclos": 5,
-    "funciones": 1
+    "ciclos": 7,
+    "funciones": 2
   },
   "intentos_por_concepto": {
     "ciclos": [
@@ -13,20 +13,25 @@
       2,
       3,
       4,
+      1,
+      1,
+      1,
       1
     ],
     "funciones": [
-      1
+      1,
+      2,
+      3
     ]
   },
   "errores_frecuentes": [
     "ciclos",
     "funciones"
   ],
-  "intentos_promedio": 2.0,
-  "score_riesgo": 3.4,
+  "intentos_promedio": 1.8,
+  "score_riesgo": 4.1,
   "en_alerta": false,
-  "ultima_sesion": "2026-06-07 16:45",
+  "ultima_sesion": "2026-06-08 05:03",
   "historial_errores": [
     {
       "concepto": "ciclos",
@@ -63,6 +68,24 @@
       "tipo_error": "error_runtime",
       "intento": 1,
       "timestamp": "2026-06-07 16:45"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-08 04:35"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-08 05:00"
+    },
+    {
+      "concepto": "funciones",
+      "tipo_error": "error_runtime",
+      "intento": 3,
+      "timestamp": "2026-06-08 05:03"
     }
   ]
 }

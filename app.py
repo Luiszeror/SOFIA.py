@@ -145,10 +145,11 @@ with st.sidebar:
     st.markdown("---")
     llm_activo = st.session_state.orquestador._llm_disponible
     if llm_activo:
-        st.success("LLM activo (Gemini 1.5 Flash)")
+        modelo = getattr(st.session_state.orquestador.tutor, "modelo_activo", "Gemini")
+        st.success(f"LLM activo ({modelo})")
     else:
         st.warning("Sin API key — modo básico")
-        st.caption("Agrega GOOGLE_API_KEY en .env para activar el tutor completo")
+        st.caption("Agrega GOOGLE_API_KEY en .env — gratis en aistudio.google.com")
 
     if st.button("Nueva sesión", type="secondary"):
         st.session_state.historial_chat = []

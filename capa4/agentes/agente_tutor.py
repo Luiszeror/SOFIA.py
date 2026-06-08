@@ -2,8 +2,9 @@
 AGENTE 1 — Tutor Socrático
 Capa 4 — Sistema de Tutoría Socrática UPTC
 
-Usa Google Gemini API (gratuito con cuenta Google).
-Modelo: gemini-1.5-flash (rápido y gratuito)
+Usa Google Gemini API.
+Intenta primero gemini-2.5-flash, si falla por cuota usa gemini-2.5-flash-lite-preview-06-17,
+si falla también cae a modo básico automáticamente.
 """
 
 import os
@@ -12,7 +13,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SYSTEM_PROMPT_SOCRATICO = """Eres SOFIA, un tutor de Python que sigue el método socrático estrictamente.
+MODELOS_FALLBACK = [
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+]
+
+SYSTEM_PROMPT_SOCRATICO = """Eres SOFIA, un tutor de Python que sigue el método socrático estrictamente. Responde siempre en español.
 
 REGLAS ABSOLUTAS:
 1. NUNCA escribas código corregido directamente.
@@ -24,18 +32,15 @@ REGLAS ABSOLUTAS:
 7. Máximo 4 oraciones + la pregunta final. Sin listas, sin código.
 
 ESTILO DE PREGUNTA SEGÚN INTENTO:
-- Intento 1-2: Pregunta conceptual amplia.
-- Intento 3-4: Pregunta sobre línea específica del código.
+- Intento 1-2: Pregunta conceptual amplia ("¿Qué debería retornar esta función?")
+- Intento 3-4: Pregunta sobre una línea específica ("¿Qué valor tiene x justo antes de la línea 3?")
 - Intento 5+: Pista muy concreta sin dar la solución.
 
 NUNCA uses: La respuesta es... / Deberías escribir... / El código correcto es...
 """
 
 
-def construir_prompt_completo(codigo, resultado_capa3, contexto_rag, perfil, intento, historial):
-    """
-    Gemini usa un solo string de prompt — combinamos todo aquí.
-    """
+def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento, historial):
     perfil_texto = ""
     if perfil.get("errores_frecuentes"):
         errores = ", ".join(perfil["errores_frecuentes"][:3])
@@ -63,7 +68,6 @@ def construir_prompt_completo(codigo, resultado_capa3, contexto_rag, perfil, int
         f"Intento número: {intento}\n"
     )
 
-    # Historial de conversación como texto
     historial_texto = ""
     if historial:
         historial_texto = "\n[Conversación previa]\n"
@@ -79,28 +83,49 @@ def construir_prompt_completo(codigo, resultado_capa3, contexto_rag, perfil, int
         f"{historial_texto}\n"
         f"[Código actual del estudiante]\n"
         f"```python\n{codigo}\n```\n\n"
-        f"Genera tu respuesta socrática para el intento #{intento}. "
-        f"Recuerda: máximo 4 oraciones y termina con UNA pregunta."
+        f"Genera tu respuesta socrática en español para el intento #{intento}. "
+        f"Máximo 4 oraciones y termina con UNA pregunta."
     )
 
 
 class AgenteTutor:
-    """Agente 1 — Tutor Socrático usando Google Gemini (gratuito)."""
+    """
+    Agente 1 — Tutor Socrático usando Google Gemini.
+    Intenta los modelos en orden hasta que uno funcione.
+    """
 
-    def __init__(self, modelo: str = "gemini-2.0-flash", temperatura: float = 0.4):
-        self.modelo_nombre = modelo
+    def __init__(self, temperatura: float = 0.4):
         self.temperatura   = temperatura
+        self.modelo_activo = None
+
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY no encontrada en .env")
+
         genai.configure(api_key=api_key)
-        self.modelo = genai.GenerativeModel(
-            model_name=modelo,
-            generation_config=genai.types.GenerationConfig(
-                temperature=temperatura,
-                max_output_tokens=400,
-            ),
-        )
+
+        # Intentar cada modelo hasta encontrar uno disponible
+        for nombre_modelo in MODELOS_FALLBACK:
+            try:
+                modelo = genai.GenerativeModel(
+                    model_name=nombre_modelo,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=temperatura,
+                        max_output_tokens=400,
+                    ),
+                )
+                # Test rápido para verificar que el modelo responde
+                test = modelo.generate_content("Di solo: ok")
+                self.modelo        = modelo
+                self.modelo_activo = nombre_modelo
+                print(f"  [AgenteTutor] Modelo activo: {nombre_modelo}")
+                break
+            except Exception as e:
+                print(f"  [AgenteTutor] {nombre_modelo} no disponible: {type(e).__name__} — probando siguiente...")
+                continue
+
+        if not self.modelo_activo:
+            raise ValueError("Ningún modelo de Gemini está disponible con esta API key.")
 
     def responder(self, codigo, resultado_capa3, resultado_capa2, perfil, intento=1, historial=None):
         if historial is None:
@@ -109,17 +134,40 @@ class AgenteTutor:
         contexto_rag = resultado_capa2.contexto_llm if resultado_capa2 else "Sin material relevante."
         fuentes      = resultado_capa2.fuentes if resultado_capa2 else []
 
-        prompt = construir_prompt_completo(
+        prompt = construir_prompt(
             codigo, resultado_capa3, contexto_rag, perfil, intento, historial
         )
 
-        respuesta = self.modelo.generate_content(prompt)
-        texto     = respuesta.text.strip()
+        # Intentar con el modelo activo, si falla probar los siguientes
+        texto = None
+        for nombre_modelo in MODELOS_FALLBACK:
+            try:
+                modelo_temp = genai.GenerativeModel(
+                    model_name=nombre_modelo,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=self.temperatura,
+                        max_output_tokens=400,
+                    ),
+                )
+                respuesta = modelo_temp.generate_content(prompt)
+                texto = respuesta.text.strip()
+                if self.modelo_activo != nombre_modelo:
+                    print(f"  [AgenteTutor] Cambiando a modelo: {nombre_modelo}")
+                    self.modelo_activo = nombre_modelo
+                    self.modelo = modelo_temp
+                break
+            except Exception as e:
+                print(f"  [AgenteTutor] {nombre_modelo} falló: {type(e).__name__} — probando siguiente...")
+                continue
+
+        if texto is None:
+            raise ValueError("Ningún modelo de Gemini respondió correctamente.")
 
         return {
             "respuesta":     texto,
             "tipo_error":    resultado_capa3.get("tipo_error", "general"),
             "concepto":      resultado_capa3.get("concepto", "general"),
             "fuentes":       fuentes,
-            "tokens_usados": 0,  # Gemini no expone tokens en esta versión
+            "tokens_usados": 0,
+            "modelo_usado":  self.modelo_activo,
         }
