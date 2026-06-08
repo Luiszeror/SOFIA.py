@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOFIA.py — Panel Docente</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --azul:      #1e3a5f;
+    --azul-med:  #2563eb;
+    --azul-claro:#dbeafe;
+    --verde:     #166534;
+    --verde-bg:  #dcfce7;
+    --rojo:      #991b1b;
+    --rojo-bg:   #fee2e2;
+    --ambar:     #854d0e;
+    --ambar-bg:  #fef9c3;
+    --gris-bg:   #f8fafc;
+    --gris-bd:   #e2e8f0;
+    --texto:     #1e293b;
+    --texto-2:   #64748b;
+    --blanco:    #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--gris-bg); color: var(--texto); }
+
+  /* ── LOGIN ──────────────────────────────────────────── */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  }
+  .login-card {
+    background: white; border-radius: 20px; padding: 2.5rem 2rem;
+    width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .login-logo { text-align: center; font-size: 3rem; margin-bottom: .5rem; }
+  .login-title { text-align: center; font-size: 1.5rem; font-weight: 700;
+    color: var(--azul); margin-bottom: .25rem; }
+  .login-sub { text-align: center; color: var(--texto-2); font-size: .85rem;
+    margin-bottom: 1.75rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { font-size: .85rem; font-weight: 500; color: var(--texto-2);
+    display: block; margin-bottom: .35rem; }
+  .form-group input {
+    width: 100%; padding: .7rem 1rem; border: 1.5px solid var(--gris-bd);
+    border-radius: 10px; font-size: .95rem; color: var(--texto);
+    transition: border .2s;
+  }
+  .form-group input:focus { outline: none; border-color: var(--azul-med); }
+  .btn-login {
+    width: 100%; padding: .8rem; background: var(--azul);
+    color: white; border: none; border-radius: 10px; font-size: 1rem;
+    font-weight: 600; cursor: pointer; margin-top: .5rem; transition: opacity .2s;
+  }
+  .btn-login:hover { opacity: .88; }
+  .login-error { color: var(--rojo); font-size: .85rem; margin-top: .75rem;
+    text-align: center; display: none; }
+
+  /* ── DASHBOARD ───────────────────────────────────────── */
+  #dashboard { display: none; }
+
+  .topbar {
+    background: linear-gradient(90deg, #1a1a2e, #0f3460);
+    color: white; padding: .9rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-left h1 { font-size: 1.1rem; font-weight: 600; }
+  .topbar-left span { font-size: .8rem; color: #94a3b8; }
+  .btn-logout {
+    background: rgba(255,255,255,.12); color: white; border: 1px solid rgba(255,255,255,.2);
+    padding: .4rem 1rem; border-radius: 8px; cursor: pointer; font-size: .85rem;
+    transition: background .2s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,.2); }
+
+  .main { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+
+  /* Filtros */
+  .filters {
+    display: flex; gap: 12px; align-items: center; margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .filters select, .filters input {
+    padding: .5rem .85rem; border: 1.5px solid var(--gris-bd); border-radius: 8px;
+    font-size: .88rem; color: var(--texto); background: white;
+  }
+  .filters label { font-size: .85rem; color: var(--texto-2); font-weight: 500; }
+
+  /* Métricas */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 1.5rem; }
+  .metric-card {
+    background: white; border-radius: 14px; padding: 1.1rem 1.25rem;
+    border: 1px solid var(--gris-bd); box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .metric-card .val { font-size: 2rem; font-weight: 700; color: var(--azul); }
+  .metric-card .lbl { font-size: .8rem; color: var(--texto-2); margin-top: .15rem; }
+  .metric-card.alerta .val { color: var(--rojo); }
+  .metric-card.ok .val { color: var(--verde); }
+
+  /* Alertas */
+  .alertas-strip {
+    background: var(--rojo-bg); border: 1px solid #fca5a5; border-radius: 12px;
+    padding: .85rem 1.25rem; margin-bottom: 1.25rem; display: none;
+  }
+  .alertas-strip h3 { font-size: .9rem; color: var(--rojo); margin-bottom: .5rem; }
+  .alerta-chip {
+    display: inline-block; background: var(--rojo); color: white;
+    padding: .2rem .75rem; border-radius: 99px; font-size: .78rem;
+    margin: 2px 4px; cursor: pointer;
+  }
+  .alerta-chip:hover { opacity: .85; }
+
+  /* Grid principal */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
+  .card {
+    background: white; border-radius: 14px; padding: 1.25rem;
+    border: 1px solid var(--gris-bd); box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .card h2 { font-size: .95rem; font-weight: 600; color: var(--azul);
+    margin-bottom: 1rem; border-bottom: 1px solid var(--gris-bd); padding-bottom: .5rem; }
+
+  /* Tabla estudiantes */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  thead th {
+    background: var(--gris-bg); padding: .6rem .9rem; text-align: left;
+    font-weight: 600; color: var(--texto-2); font-size: .78rem;
+    text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--gris-bd);
+  }
+  tbody tr { border-bottom: 1px solid var(--gris-bd); cursor: pointer; transition: background .15s; }
+  tbody tr:hover { background: #f1f5f9; }
+  tbody td { padding: .65rem .9rem; }
+
+  .score-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 99px;
+    font-size: .75rem; font-weight: 600;
+  }
+  .score-alto    { background: var(--rojo-bg);  color: var(--rojo);  }
+  .score-medio   { background: var(--ambar-bg); color: var(--ambar); }
+  .score-bajo    { background: var(--verde-bg); color: var(--verde); }
+  .dot-activo    { color: #22c55e; }
+  .dot-inactivo  { color: #f59e0b; }
+  .dot-ausente   { color: var(--rojo); }
+
+  /* Modal detalle estudiante */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 20px; padding: 2rem;
+    width: 560px; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 1.25rem; }
+  .modal-header h2 { font-size: 1.2rem; color: var(--azul); }
+  .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer;
+    color: var(--texto-2); line-height: 1; }
+  .modal-section { margin-bottom: 1rem; }
+  .modal-section h3 { font-size: .85rem; font-weight: 600; color: var(--texto-2);
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem; }
+  .concepto-bar { margin-bottom: .4rem; }
+  .concepto-bar-label { display: flex; justify-content: space-between;
+    font-size: .82rem; margin-bottom: 2px; }
+  .concepto-bar-bg { background: var(--gris-bd); border-radius: 99px; height: 8px; overflow: hidden; }
+  .concepto-bar-fill { height: 100%; border-radius: 99px; background: var(--azul-med); }
+  .concepto-bar-fill.alto { background: var(--rojo); }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .info-item { background: var(--gris-bg); border-radius: 8px; padding: .6rem .9rem; }
+  .info-item .val { font-size: 1.1rem; font-weight: 700; color: var(--azul); }
+  .info-item .lbl { font-size: .75rem; color: var(--texto-2); }
+
+  /* Inactivos */
+  .inactivo-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .5rem 0; border-bottom: 1px solid var(--gris-bd); font-size: .85rem;
+  }
+  .inactivo-item:last-child { border: none; }
+  .dias-badge { background: var(--ambar-bg); color: var(--ambar);
+    padding: 2px 8px; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+
+  @media (max-width: 900px) {
+    .metrics { grid-template-columns: repeat(2,1fr); }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ═══════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🐍</div>
+    <div class="login-title">SOFIA.py</div>
+    <div class="login-sub">Panel de Control Docente · UPTC</div>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="inp-user" placeholder="ej: msuarez" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="inp-pwd" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="login()">Ingresar →</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ════════════════════════════════════════════════════ -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span style="font-size:1.8rem">🐍</span>
+      <div>
+        <h1>SOFIA.py — Panel Docente</h1>
+        <span id="docente-info">—</span>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <div class="main">
+
+    <!-- Filtros -->
+    <div class="filters">
+      <label>Filtrar por semestre:</label>
+      <select id="filtro-semestre" onchange="aplicarFiltro()">
+        <option value="todos">Todos</option>
+      </select>
+      <input type="text" id="filtro-buscar" placeholder="🔍 Buscar estudiante..."
+             oninput="aplicarFiltro()" style="min-width:200px">
+      <label style="margin-left:auto; font-size:.8rem; color:#94a3b8" id="ultima-act">—</label>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alertas-strip" id="alertas-strip">
+      <h3>⚠️ Estudiantes en zona de riesgo</h3>
+      <div id="alertas-chips"></div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="val" id="met-total">—</div>
+        <div class="lbl">Estudiantes activos</div>
+      </div>
+      <div class="metric-card alerta">
+        <div class="val" id="met-riesgo">—</div>
+        <div class="lbl">En zona de riesgo (score ≥ 6.5)</div>
+      </div>
+      <div class="metric-card">
+        <div class="val" id="met-prom-score">—</div>
+        <div class="lbl">Score promedio del grupo</div>
+      </div>
+      <div class="metric-card ok">
+        <div class="val" id="met-prom-intentos">—</div>
+        <div class="lbl">Intentos promedio por ejercicio</div>
+      </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="grid2">
+      <div class="card">
+        <h2>Errores por concepto</h2>
+        <canvas id="chart-errores" height="220"></canvas>
+      </div>
+      <div class="card">
+        <h2>Distribución de score de riesgo</h2>
+        <canvas id="chart-scores" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabla + Inactivos -->
+    <div class="grid2">
+      <div class="card" style="grid-column: span 2">
+        <h2>Estudiantes — ordenados por score de riesgo</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Semestre</th>
+                <th>Score riesgo</th>
+                <th>Intentos prom.</th>
+                <th>Interacciones</th>
+                <th>Conceptos con dificultad</th>
+                <th>Última sesión</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inactivos -->
+    <div class="card" style="margin-top:16px">
+      <h2>Estudiantes inactivos (sin sesión en los últimos 3 días)</h2>
+      <div id="inactivos-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal detalle estudiante -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-nombre">—</h2>
+        <small id="modal-sub" style="color:#64748b">—</small>
+      </div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="info-grid" id="modal-metricas"></div>
+    <div class="modal-section" style="margin-top:1rem">
+      <h3>Errores por concepto</h3>
+      <div id="modal-barras"></div>
+    </div>
+    <div class="modal-section">
+      <h3>Recomendación pedagógica</h3>
+      <div id="modal-recomendacion" style="font-size:.88rem;line-height:1.6;
+        background:#f8fafc;border-radius:8px;padding:.75rem;color:#1e293b"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CREDENCIALES (hash SHA-256) ══════════════════════════════════════════
+const DOCENTES = {
+  msuarez: {
+    nombre: "Marco Javier Suárez Barón",
+    cargo:  "Profesor titular — Inteligencia Computacional",
+    hash:   "e8add53910d354913fca4e1b8e05e478e4a2e8cb5e2b7e7b4f6e0b2e8d3a1c9f",
+    semestres: [1,2,3,4,5,6,7,8,9,10],
+  },
+  frincon: {
+    nombre: "Freddy Rincón",
+    cargo:  "Profesor — Programación Fundamentos",
+    hash:   "24c8e3f59f2b4405aa7f8d20d7a74c3e7a17b8e4f5c6d9a2b1e3f0c8d5a7b2e9",
+    semestres: [1,2,3],
+  },
+};
+
+// ══ DATOS DE PERFILES (simulados — en producción se leen del servidor) ════
+const PERFILES = [
+  {estudiante_id:"carlos_mendez",nombre:"Carlos Mendez",semestre:1,interacciones:24,
+   errores_por_concepto:{ciclos:8,funciones:5,listas:3},errores_frecuentes:["ciclos","funciones","listas"],
+   intentos_promedio:2.6,score_riesgo:7.2,en_alerta:true,ultima_sesion:"2026-06-07 14:23"},
+  {estudiante_id:"ana_lopez",nombre:"Ana Lopez",semestre:1,interacciones:38,
+   errores_por_concepto:{condicionales:2,strings:1},errores_frecuentes:["condicionales","strings"],
+   intentos_promedio:1.3,score_riesgo:1.8,en_alerta:false,ultima_sesion:"2026-06-07 16:45"},
+  {estudiante_id:"juan_garcia",nombre:"Juan Garcia",semestre:2,interacciones:15,
+   errores_por_concepto:{recursion:6,funciones:4,diccionarios:2},errores_frecuentes:["recursion","funciones","diccionarios"],
+   intentos_promedio:3.2,score_riesgo:6.8,en_alerta:true,ultima_sesion:"2026-06-06 10:12"},
+  {estudiante_id:"maria_torres",nombre:"Maria Torres",semestre:2,interacciones:30,
+   errores_por_concepto:{listas:3,strings:2},errores_frecuentes:["listas","strings"],
+   intentos_promedio:1.6,score_riesgo:2.4,en_alerta:false,ultima_sesion:"2026-06-07 09:30"},
+  {estudiante_id:"pedro_silva",nombre:"Pedro Silva",semestre:3,interacciones:8,
+   errores_por_concepto:{ciclos:4,condicionales:3,variables_y_tipos:2},errores_frecuentes:["ciclos","condicionales","variables_y_tipos"],
+   intentos_promedio:2.8,score_riesgo:5.5,en_alerta:false,ultima_sesion:"2026-06-05 15:00"},
+  {estudiante_id:"laura_ramirez",nombre:"Laura Ramirez",semestre:1,interacciones:45,
+   errores_por_concepto:{funciones:1},errores_frecuentes:["funciones"],
+   intentos_promedio:1.0,score_riesgo:0.5,en_alerta:false,ultima_sesion:"2026-06-07 18:00"},
+  {estudiante_id:"diego_castro",nombre:"Diego Castro",semestre:3,interacciones:6,
+   errores_por_concepto:{listas:5,recursion:4,funciones:3},errores_frecuentes:["listas","recursion","funciones"],
+   intentos_promedio:3.8,score_riesgo:8.1,en_alerta:true,ultima_sesion:"2026-06-04 11:20"},
+  {estudiante_id:"sofia_herrera",nombre:"Sofia Herrera",semestre:2,interacciones:27,
+   errores_por_concepto:{diccionarios:2,strings:1},errores_frecuentes:["diccionarios"],
+   intentos_promedio:1.3,score_riesgo:1.5,en_alerta:false,ultima_sesion:"2026-06-07 12:00"},
+];
+
+// ══ ESTADO ═══════════════════════════════════════════════════════════════
+let docenteActual = null;
+let chartErrores  = null;
+let chartScores   = null;
+
+// ══ HASH SHA-256 ═════════════════════════════════════════════════════════
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+// ══ LOGIN ════════════════════════════════════════════════════════════════
+async function login() {
+  const user = document.getElementById("inp-user").value.trim().toLowerCase();
+  const pwd  = document.getElementById("inp-pwd").value;
+  const err  = document.getElementById("login-error");
+
+  if (!DOCENTES[user]) { err.style.display = "block"; return; }
+
+  const hash = await sha256(pwd);
+  // Comparación flexible — los primeros 20 chars del hash
+  if (!DOCENTES[user].hash.startsWith(hash.substring(0,20)) &&
+      hash !== DOCENTES[user].hash) {
+    err.style.display = "block"; return;
+  }
+
+  err.style.display = "none";
+  docenteActual = { ...DOCENTES[user], id: user };
+
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("dashboard").style.display    = "block";
+  document.getElementById("docente-info").textContent   =
+    `${docenteActual.nombre} · ${docenteActual.cargo}`;
+  document.getElementById("ultima-act").textContent =
+    `Última actualización: ${new Date().toLocaleString("es-CO")}`;
+
+  inicializarDashboard();
+}
+
+document.getElementById("inp-pwd").addEventListener("keydown", e => {
+  if (e.key === "Enter") login();
+});
+
+function logout() {
+  docenteActual = null;
+  document.getElementById("inp-user").value = "";
+  document.getElementById("inp-pwd").value  = "";
+  document.getElementById("dashboard").style.display    = "none";
+  document.getElementById("login-screen").style.display = "flex";
+  if (chartErrores) { chartErrores.destroy(); chartErrores = null; }
+  if (chartScores)  { chartScores.destroy();  chartScores  = null; }
+}
+
+// ══ DASHBOARD ════════════════════════════════════════════════════════════
+function perfilesFiltrados(semestre = "todos", buscar = "") {
+  return PERFILES
+    .filter(p => docenteActual.semestres.includes(p.semestre))
+    .filter(p => semestre === "todos" || p.semestre == semestre)
+    .filter(p => !buscar || p.nombre.toLowerCase().includes(buscar.toLowerCase()))
+    .sort((a, b) => b.score_riesgo - a.score_riesgo);
+}
+
+function inicializarDashboard() {
+  // Poblar filtro de semestres
+  const sel = document.getElementById("filtro-semestre");
+  sel.innerHTML = '<option value="todos">Todos los semestres</option>';
+  docenteActual.semestres.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s; opt.textContent = `Semestre ${s}`;
+    sel.appendChild(opt);
+  });
+  aplicarFiltro();
+}
+
+function aplicarFiltro() {
+  const sem    = document.getElementById("filtro-semestre").value;
+  const buscar = document.getElementById("filtro-buscar").value;
+  const datos  = perfilesFiltrados(sem, buscar);
+  renderMetricas(datos);
+  renderAlertas(datos);
+  renderTabla(datos);
+  renderInactivos(datos);
+  renderCharts(datos);
+}
+
+function renderMetricas(datos) {
+  document.getElementById("met-total").textContent = datos.length;
+  document.getElementById("met-riesgo").textContent =
+    datos.filter(p => p.en_alerta).length;
+  const promScore = datos.length
+    ? (datos.reduce((a,p) => a + p.score_riesgo, 0) / datos.length).toFixed(1)
+    : "—";
+  document.getElementById("met-prom-score").textContent = promScore;
+  const promInt = datos.length
+    ? (datos.reduce((a,p) => a + p.intentos_promedio, 0) / datos.length).toFixed(1)
+    : "—";
+  document.getElementById("met-prom-intentos").textContent = promInt;
+}
+
+function renderAlertas(datos) {
+  const enAlerta = datos.filter(p => p.en_alerta);
+  const strip    = document.getElementById("alertas-strip");
+  const chips    = document.getElementById("alertas-chips");
+  if (!enAlerta.length) { strip.style.display = "none"; return; }
+  strip.style.display = "block";
+  chips.innerHTML = enAlerta.map(p =>
+    `<span class="alerta-chip" onclick="abrirModal('${p.estudiante_id}')">
+      ⚠ ${p.nombre} (${p.score_riesgo})
+    </span>`
+  ).join("");
+}
+
+function diasDesde(fechaStr) {
+  if (!fechaStr) return 999;
+  const d = new Date(fechaStr);
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function estadoActividad(dias) {
+  if (dias <= 1)  return { dot: "🟢", cls: "dot-activo",   txt: "Activo hoy" };
+  if (dias <= 3)  return { dot: "🟡", cls: "dot-inactivo", txt: `Hace ${dias}d` };
+  return           { dot: "🔴", cls: "dot-ausente",  txt: `Inactivo ${dias}d` };
+}
+
+function renderTabla(datos) {
+  const tbody = document.getElementById("tabla-body");
+  if (!datos.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:#64748b">
+      Sin estudiantes para este filtro.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = datos.map(p => {
+    const dias    = diasDesde(p.ultima_sesion);
+    const estado  = estadoActividad(dias);
+    const sCls    = p.score_riesgo >= 6.5 ? "score-alto"
+                  : p.score_riesgo >= 4   ? "score-medio" : "score-bajo";
+    const concs   = (p.errores_frecuentes || []).slice(0,2)
+                    .map(c => `<code style="font-size:.75rem;background:#f1f5f9;
+                      padding:1px 5px;border-radius:4px">${c}</code>`).join(" ");
+    return `<tr onclick="abrirModal('${p.estudiante_id}')">
+      <td><strong>${p.nombre}</strong></td>
+      <td>Sem. ${p.semestre}</td>
+      <td><span class="score-badge ${sCls}">${p.score_riesgo}</span></td>
+      <td>${p.intentos_promedio}</td>
+      <td>${p.interacciones}</td>
+      <td>${concs || "—"}</td>
+      <td style="font-size:.8rem;color:#64748b">${p.ultima_sesion || "—"}</td>
+      <td>${estado.dot} <span style="font-size:.8rem;color:#64748b">${estado.txt}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+function renderInactivos(datos) {
+  const inact = datos.filter(p => diasDesde(p.ultima_sesion) >= 3)
+                     .sort((a,b) => diasDesde(b.ultima_sesion) - diasDesde(a.ultima_sesion));
+  const cont  = document.getElementById("inactivos-list");
+  if (!inact.length) {
+    cont.innerHTML = `<p style="color:#64748b;font-size:.88rem">
+      ✅ Todos los estudiantes han tenido actividad reciente.</p>`;
+    return;
+  }
+  cont.innerHTML = inact.map(p => {
+    const dias = diasDesde(p.ultima_sesion);
+    return `<div class="inactivo-item" onclick="abrirModal('${p.estudiante_id}')"
+      style="cursor:pointer">
+      <span><strong>${p.nombre}</strong>
+        <span style="color:#64748b;font-size:.8rem"> · Sem. ${p.semestre}</span></span>
+      <span class="dias-badge">${dias} días sin actividad</span>
+    </div>`;
+  }).join("");
+}
+
+function renderCharts(datos) {
+  // Errores por concepto
+  const errMap = {};
+  datos.forEach(p => {
+    Object.entries(p.errores_por_concepto || {}).forEach(([c, n]) => {
+      errMap[c] = (errMap[c] || 0) + n;
+    });
+  });
+  const errLabels = Object.keys(errMap).sort((a,b) => errMap[b]-errMap[a]);
+  const errVals   = errLabels.map(c => errMap[c]);
+
+  if (chartErrores) chartErrores.destroy();
+  chartErrores = new Chart(document.getElementById("chart-errores"), {
+    type: "bar",
+    data: {
+      labels: errLabels,
+      datasets: [{
+        label: "Errores totales",
+        data: errVals,
+        backgroundColor: errLabels.map((_,i) =>
+          ["#6366f1","#3b82f6","#06b6d4","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899"][i % 8]),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Distribución scores
+  const bajo  = datos.filter(p => p.score_riesgo < 4).length;
+  const medio = datos.filter(p => p.score_riesgo >= 4 && p.score_riesgo < 6.5).length;
+  const alto  = datos.filter(p => p.score_riesgo >= 6.5).length;
+
+  if (chartScores) chartScores.destroy();
+  chartScores = new Chart(document.getElementById("chart-scores"), {
+    type: "doughnut",
+    data: {
+      labels: ["Bajo riesgo (< 4)", "Riesgo medio (4-6.5)", "Alto riesgo (≥ 6.5)"],
+      datasets: [{
+        data: [bajo, medio, alto],
+        backgroundColor: ["#dcfce7","#fef9c3","#fee2e2"],
+        borderColor:     ["#166534","#854d0e","#991b1b"],
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } }
+    }
+  });
+}
+
+// ══ MODAL DETALLE ═════════════════════════════════════════════════════════
+function abrirModal(id) {
+  const p = PERFILES.find(x => x.estudiante_id === id);
+  if (!p) return;
+
+  document.getElementById("modal-nombre").textContent = p.nombre;
+  document.getElementById("modal-sub").textContent    =
+    `Semestre ${p.semestre} · ${p.interacciones} interacciones · Última sesión: ${p.ultima_sesion}`;
+
+  const sCls = p.score_riesgo >= 6.5 ? "#991b1b"
+             : p.score_riesgo >= 4   ? "#854d0e" : "#166534";
+  document.getElementById("modal-metricas").innerHTML = `
+    <div class="info-item">
+      <div class="val" style="color:${sCls}">${p.score_riesgo}</div>
+      <div class="lbl">Score de riesgo</div>
+    </div>
+    <div class="info-item">
+      <div class="val">${p.intentos_promedio}</div>
+      <div class="lbl">Intentos promedio</div>
+    </div>
+    <div class="info-item">
+      <div class="val">${p.interacciones}</div>
+      <div class="lbl">Interacciones totales</div>
+    </div>
+    <div class="info-item">
+      <div class="val">${diasDesde(p.ultima_sesion)}d</div>
+      <div class="lbl">Días sin actividad</div>
+    </div>
+  `;
+
+  const errores = Object.entries(p.errores_por_concepto || {})
+                        .sort((a,b) => b[1]-a[1]);
+  const maxErr  = errores[0]?.[1] || 1;
+  document.getElementById("modal-barras").innerHTML = errores.map(([c,n]) => `
+    <div class="concepto-bar">
+      <div class="concepto-bar-label">
+        <span>${c.replace(/_/g," ")}</span><span>${n} error(es)</span>
+      </div>
+      <div class="concepto-bar-bg">
+        <div class="concepto-bar-fill ${n >= maxErr ? 'alto' : ''}"
+             style="width:${Math.round(n/maxErr*100)}%"></div>
+      </div>
+    </div>
+  `).join("") || "<p style='color:#64748b;font-size:.85rem'>Sin errores registrados.</p>";
+
+  document.getElementById("modal-recomendacion").innerHTML =
+    generarRecomendacion(p);
+
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+function cerrarModal(e) {
+  if (!e || e.target === document.getElementById("modal-overlay")) {
+    document.getElementById("modal-overlay").classList.remove("open");
+  }
+}
+
+function generarRecomendacion(p) {
+  if (!p.errores_frecuentes?.length) {
+    return "✅ El estudiante muestra buen desempeño general. Se recomienda proponer ejercicios de nivel intermedio para consolidar los conceptos.";
+  }
+  const top = p.errores_frecuentes[0];
+  const recomendaciones = {
+    ciclos:          "Reforzar con ejercicios de contadores y acumuladores. Hacer énfasis en la condición de parada del while y el valor final de range().",
+    funciones:       "Trabajar la diferencia entre print y return con ejemplos concretos. Proponer ejercicios donde el resultado de la función se use en otra operación.",
+    listas:          "Practicar indexación y slicing con listas pequeñas. El error de IndexError es frecuente — reforzar que el índice va de 0 a len-1.",
+    recursion:       "Dedicar sesión específica al caso base. Usar la traza de factorial para visualizar el stack de llamadas.",
+    strings:         "Reforzar métodos de string con ejercicios de manipulación de texto. Practicar f-strings y format().",
+    condicionales:   "Revisar el uso de == vs = y la estructura if-elif-else con casos de múltiples condiciones.",
+    diccionarios:    "Practicar acceso seguro con get() y verificación de claves con 'in'. Ejercicios de frecuencia de palabras son muy efectivos.",
+    variables_y_tipos:"Reforzar conversión de tipos y errores de TypeError. Proponer ejercicios que combinen int, str y float.",
+  };
+  const rec = recomendaciones[top] || "Se recomienda revisar los fundamentos del concepto con ejercicios básicos.";
+  const alerta = p.en_alerta
+    ? `<p style="color:#991b1b;font-weight:600;margin-bottom:.5rem">
+        ⚠️ Este estudiante está en zona de alto riesgo. Se recomienda contacto directo.</p>`
+    : "";
+  return `${alerta}<p>Principal dificultad: <strong>${top.replace(/_/g," ")}</strong></p>
+    <p style="margin-top:.4rem">${rec}</p>`;
+}
+</script>
+</body>
+</html>

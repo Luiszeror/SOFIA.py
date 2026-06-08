@@ -16,7 +16,7 @@ Flujo por interacción:
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from core.evaluador import EvaluadorPython, CasoPrueba
 from casos_de_prueba.repositorio import obtener_casos
@@ -62,6 +62,9 @@ class Orquestador:
         intento: int = 1,
         historial: list = None,
         modo_libre: bool = False,
+        semestre: int = 1,
+        enunciado_ejercicio: dict = None,
+        preguntas_sin_codigo: int = 0,
     ) -> dict:
         """
         Pipeline completo por cada interacción del estudiante.
@@ -92,6 +95,12 @@ class Orquestador:
                 casos = [CasoPrueba("ejecución libre", None, "", concepto)]
             resultado_eval = self.evaluador.evaluar(codigo, casos, concepto, intento)
         resultado_dict = resultado_eval.to_dict()
+        # Capturar stdout del sandbox para mostrarlo en la interfaz
+        stdout_codigo = ""
+        if resultado_eval.resultados_casos:
+            stdout_codigo = resultado_eval.resultados_casos[0].salida_obtenida or ""
+        elif resultado_eval.metadata.get("stdout"):
+            stdout_codigo = resultado_eval.metadata["stdout"]
 
         # ── PASO 2: Capa 2 — Recuperar contexto RAG ──────────────────────
         resultado_rag = self.retriever.recuperar(
@@ -101,7 +110,7 @@ class Orquestador:
         )
 
         # ── PASO 3: Agente Analista — Actualizar perfil ───────────────────
-        perfil = self.analista.cargar_perfil(estudiante_id, nombre_estudiante)
+        perfil = self.analista.cargar_perfil(estudiante_id, nombre_estudiante, semestre)
         resuelto = resultado_eval.tipo_error.value == "correcto"
         perfil = self.analista.actualizar_tras_interaccion(
             perfil    = perfil,
@@ -113,21 +122,33 @@ class Orquestador:
 
         # ── PASO 4: Agente Tutor — Respuesta socrática ───────────────────
         if self._llm_disponible:
-            resumen_perfil = self.analista.generar_resumen_para_tutor(perfil)
-            perfil_para_tutor = {
-                **perfil.to_dict(),
-                "resumen": resumen_perfil,
-            }
-            resp_tutor = self.tutor.responder(
-                codigo          = codigo,
-                resultado_capa3 = resultado_dict,
-                resultado_capa2 = resultado_rag,
-                perfil          = perfil_para_tutor,
-                intento         = intento,
-                historial       = historial,
-            )
-            respuesta_texto = resp_tutor["respuesta"]
-            fuentes         = resp_tutor["fuentes"]
+            try:
+                resumen_perfil = self.analista.generar_resumen_para_tutor(perfil)
+                perfil_para_tutor = {
+                    **perfil.to_dict(),
+                    "resumen": resumen_perfil,
+                }
+                resp_tutor = self.tutor.responder(
+                    codigo               = codigo,
+                    resultado_capa3      = resultado_dict,
+                    resultado_capa2      = resultado_rag,
+                    perfil               = perfil_para_tutor,
+                    intento              = intento,
+                    historial            = historial or [],
+                    enunciado_ejercicio  = enunciado_ejercicio,
+                    preguntas_sin_codigo = preguntas_sin_codigo,
+                )
+                respuesta_texto = resp_tutor["respuesta"]
+                fuentes         = resp_tutor["fuentes"]
+            except Exception as e:
+                import traceback
+                print(f"  [Orquestador] Error LLM: {type(e).__name__}: {e}")
+                traceback.print_exc()
+                respuesta_texto = resultado_eval.sugerencia_socratica
+                if resultado_rag.fragmentos:
+                    frag = resultado_rag.fragmentos[0]
+                    respuesta_texto += f"\n\n📖 Del material del curso ({frag.capitulo}): recuerda revisar este concepto."
+                fuentes = resultado_rag.fuentes
         else:
             # Sin LLM: usar sugerencia del evaluador + fragmento del RAG
             respuesta_texto = resultado_eval.sugerencia_socratica
@@ -161,4 +182,141 @@ class Orquestador:
             "en_alerta":        perfil.en_alerta,
             "llm_activo":       self._llm_disponible,
             "tiempo_ms":        resultado_rag.tiempo_ms,
+            "stdout_codigo":    stdout_codigo,
+            "consola_output":   resultado_dict.get("consola_output", ""),
         }
+
+    def responder_pregunta(
+        self,
+        pregunta: str,
+        concepto_hint: str = "general",
+        estudiante_id: str = "estudiante",
+        nombre_estudiante: str = "Estudiante",
+        historial: list = None,
+        semestre: int = 1,
+        preguntas_sin_codigo: int = 0,
+        enunciado_ejercicio: dict = None,
+    ) -> dict:
+        """
+        Responde preguntas conceptuales del estudiante.
+        Usa el RAG para anclar la respuesta al material del curso.
+        El tutor responde de forma socrática — con otra pregunta al final.
+        """
+        if historial is None:
+            historial = []
+
+        # RAG — buscar contexto relevante
+        resultado_rag = self.retriever.recuperar(
+            query         = pregunta,
+            concepto_hint = concepto_hint,
+        )
+
+        if self._llm_disponible:
+            try:
+                resultado_capa3_simulado = {
+                    "tipo_error":       "pregunta_conceptual",
+                    "concepto":         concepto_hint,
+                    "mensaje_tecnico":  pregunta,
+                    "linea_error":      None,
+                    "casos_pasados":    0,
+                    "casos_ejecutados": 0,
+                }
+                perfil = self.analista.cargar_perfil(estudiante_id, nombre_estudiante, semestre)
+                resp = self.tutor.responder(
+                    codigo          = f"# Pregunta del estudiante: {pregunta}",
+                    resultado_capa3 = resultado_capa3_simulado,
+                    resultado_capa2 = resultado_rag,
+                    perfil          = perfil.to_dict(),
+                    intento         = 1,
+                    historial       = historial,
+                )
+                return {
+                    "respuesta": resp["respuesta"],
+                    "fuentes":   resp["fuentes"],
+                }
+            except Exception as e:
+                import traceback
+                print(f"  [Orquestador] Error LLM en pregunta: {type(e).__name__}: {e}")
+                traceback.print_exc()
+
+        # Fallback — respuesta básica sin LLM
+        if resultado_rag.fragmentos:
+            frag = resultado_rag.fragmentos[0]
+            # Extraer solo las primeras 2 oraciones del fragmento
+            oraciones = [s.strip() for s in frag.texto.replace("\n"," ").split(".") if len(s.strip()) > 20][:2]
+            extracto  = ". ".join(oraciones) + "." if oraciones else frag.texto[:200]
+            respuesta = (
+                f"Según el material del curso ({frag.capitulo}): {extracto}\n\n"
+                f"¿Esto responde tu pregunta?"
+            )
+        else:
+            respuesta = "No encontré material específico sobre eso. ¿Puedes reformular la pregunta?"
+
+        return {
+            "respuesta": respuesta,
+            "fuentes":   resultado_rag.fuentes,
+        }
+
+    def evaluar_respuesta_estudiante(
+        self,
+        respuesta_estudiante: str,
+        pregunta_sofia: str,
+        concepto: str,
+        estudiante_id: str,
+        nombre_estudiante: str = "Estudiante",
+        historial: list = None,
+    ) -> dict:
+        """
+        Evalúa si la respuesta del estudiante a una pregunta socrática es correcta.
+        Si es correcta, reduce el score de riesgo.
+        """
+        if historial is None:
+            historial = []
+
+        resultado_rag = self.retriever.recuperar(
+            query         = pregunta_sofia,
+            concepto_hint = concepto,
+        )
+
+        if self._llm_disponible:
+            try:
+                prompt_eval = {
+                    "tipo_error":       "respuesta_estudiante",
+                    "concepto":         concepto,
+                    "mensaje_tecnico":  f"Pregunta de SOFIA: {pregunta_sofia}\nRespuesta del estudiante: {respuesta_estudiante}",
+                    "linea_error":      None,
+                    "casos_pasados":    0,
+                    "casos_ejecutados": 0,
+                }
+                perfil = self.analista.cargar_perfil(estudiante_id, nombre_estudiante, semestre)
+                resp   = self.tutor.responder(
+                    codigo          = f"# Respuesta del estudiante: {respuesta_estudiante}",
+                    resultado_capa3 = prompt_eval,
+                    resultado_capa2 = resultado_rag,
+                    perfil          = perfil.to_dict(),
+                    intento         = 1,
+                    historial       = historial,
+                )
+                # Si la respuesta fue correcta, bajar el score
+                texto = resp["respuesta"].lower()
+                fue_correcto = any(p in texto for p in [
+                    "correcto", "exacto", "excelente", "muy bien", "perfecto",
+                    "así es", "en efecto", "tienes razón", "acertaste"
+                ])
+                if fue_correcto:
+                    self.analista.registrar_respuesta_correcta(perfil, concepto)
+
+                return {
+                    "respuesta":     resp["respuesta"],
+                    "fuentes":       resp["fuentes"],
+                    "fue_correcto":  fue_correcto,
+                }
+            except Exception as e:
+                print(f"  [Orquestador] Error LLM evaluar respuesta: {e}")
+
+        return {
+            "respuesta":    "Interesante respuesta. ¿Puedes elaborar un poco más?",
+            "fuentes":      [],
+            "fue_correcto": False,
+        }
+

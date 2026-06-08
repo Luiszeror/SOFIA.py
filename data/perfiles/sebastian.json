@@ -1,0 +1,87 @@
+{
+  "estudiante_id": "sebastian",
+  "nombre": "Sebastian",
+  "semestre": 9,
+  "sesiones": 0,
+  "interacciones": 12,
+  "errores_por_concepto": {
+    "general": 3,
+    "ciclos": 5
+  },
+  "intentos_por_concepto": {
+    "general": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "ciclos": [
+      1,
+      2,
+      3,
+      4,
+      1,
+      2
+    ]
+  },
+  "errores_frecuentes": [
+    "ciclos",
+    "general"
+  ],
+  "intentos_promedio": 2.8,
+  "score_riesgo": 4.6,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 05:58",
+  "historial_errores": [
+    {
+      "concepto": "general",
+      "tipo_error": "error_sintaxis",
+      "intento": 2,
+      "timestamp": "2026-06-08 05:52"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 3,
+      "timestamp": "2026-06-08 05:52"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 6,
+      "timestamp": "2026-06-08 05:54"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_sintaxis",
+      "intento": 1,
+      "timestamp": "2026-06-08 05:55"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_sintaxis",
+      "intento": 2,
+      "timestamp": "2026-06-08 05:56"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_sintaxis",
+      "intento": 3,
+      "timestamp": "2026-06-08 05:56"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_logico",
+      "intento": 1,
+      "timestamp": "2026-06-08 05:57"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_sintaxis",
+      "intento": 2,
+      "timestamp": "2026-06-08 05:58"
+    }
+  ]
+}

@@ -1,23 +1,19 @@
 {
-  "total_chunks": 15,
-  "timestamp": "2026-06-07 00:00:00",
-  "chunk_size": 400,
-  "chunk_overlap": 80,
+  "total_chunks": 27,
   "libros": [
-    "corpus_python"
+    "corpus_python",
+    "corpus_python_v2"
   ],
   "conceptos": [
+    "variables_y_tipos",
     "diccionarios",
-    "recursion",
-    "clases",
     "funciones",
-    "condicionales",
-    "excepciones",
-    "ciclos",
+    "recursion",
     "strings",
-    "archivos",
-    "listas",
-    "variables_y_tipos"
+    "excepciones",
+    "condicionales",
+    "ciclos",
+    "general"
   ],
   "chunks": [
     {
@@ -44,9 +40,9 @@
       "chunk_id": "228ca8cb",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 2: Condicionales",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 3,
-      "concepto": "condicionales",
+      "concepto": "variables_y_tipos",
       "num_tokens": 20,
       "posicion": 2
     },
@@ -64,9 +60,9 @@
       "chunk_id": "2311c5df",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 3: Ciclos",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 5,
-      "concepto": "ciclos",
+      "concepto": "variables_y_tipos",
       "num_tokens": 19,
       "posicion": 4
     },
@@ -74,9 +70,9 @@
       "chunk_id": "ee60405f",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 4: Funciones",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 6,
-      "concepto": "funciones",
+      "concepto": "variables_y_tipos",
       "num_tokens": 391,
       "posicion": 5
     },
@@ -84,9 +80,9 @@
       "chunk_id": "eb74443f",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 4: Funciones",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 7,
-      "concepto": "funciones",
+      "concepto": "variables_y_tipos",
       "num_tokens": 27,
       "posicion": 6
     },
@@ -94,9 +90,9 @@
       "chunk_id": "d3b236bd",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 5: Listas",
+      "capitulo": "Cap 3: Ciclos",
       "pagina_aprox": 8,
-      "concepto": "listas",
+      "concepto": "ciclos",
       "num_tokens": 329,
       "posicion": 7
     },
@@ -104,9 +100,9 @@
       "chunk_id": "f6511df4",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 6: Strings",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 9,
-      "concepto": "strings",
+      "concepto": "variables_y_tipos",
       "num_tokens": 262,
       "posicion": 8
     },
@@ -114,9 +110,9 @@
       "chunk_id": "2398802a",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 7: Diccionarios",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 10,
-      "concepto": "diccionarios",
+      "concepto": "variables_y_tipos",
       "num_tokens": 280,
       "posicion": 9
     },
@@ -134,9 +130,9 @@
       "chunk_id": "53dd13d5",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 9: Clases",
+      "capitulo": "Cap 4: Funciones",
       "pagina_aprox": 12,
-      "concepto": "clases",
+      "concepto": "funciones",
       "num_tokens": 388,
       "posicion": 11
     },
@@ -144,9 +140,9 @@
       "chunk_id": "bcf043ca",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 9: Clases",
+      "capitulo": "Cap 1: Variables y Tipos",
       "pagina_aprox": 13,
-      "concepto": "clases",
+      "concepto": "variables_y_tipos",
       "num_tokens": 13,
       "posicion": 12
     },
@@ -154,9 +150,9 @@
       "chunk_id": "1b8b843d",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 10: Excepciones",
+      "capitulo": "Cap 4: Funciones",
       "pagina_aprox": 14,
-      "concepto": "excepciones",
+      "concepto": "funciones",
       "num_tokens": 291,
       "posicion": 13
     },
@@ -164,11 +160,131 @@
       "chunk_id": "a8be46cf",
       "libro": "corpus_python",
       "titulo_libro": "Fundamentos de Python — SOFIA",
-      "capitulo": "Cap 11: Archivos",
+      "capitulo": "Cap 10: Excepciones",
       "pagina_aprox": 15,
-      "concepto": "archivos",
+      "concepto": "excepciones",
       "num_tokens": 313,
       "posicion": 14
+    },
+    {
+      "chunk_id": "bd4ead7f",
+      "libro": "corpus_python",
+      "titulo_libro": "Fundamentos de Python — SOFIA",
+      "capitulo": "Cap 8: Recursión",
+      "pagina_aprox": 16,
+      "concepto": "recursion",
+      "num_tokens": 267,
+      "posicion": 15
+    },
+    {
+      "chunk_id": "828982cd",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "General",
+      "pagina_aprox": 1,
+      "concepto": "general",
+      "num_tokens": 90,
+      "posicion": 0
+    },
+    {
+      "chunk_id": "cb7419ab",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 1: Variables y Tipos",
+      "pagina_aprox": 2,
+      "concepto": "variables_y_tipos",
+      "num_tokens": 361,
+      "posicion": 1
+    },
+    {
+      "chunk_id": "6a301ac3",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 2: Condicionales",
+      "pagina_aprox": 3,
+      "concepto": "condicionales",
+      "num_tokens": 157,
+      "posicion": 2
+    },
+    {
+      "chunk_id": "f5319f6f",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 3: Ciclos",
+      "pagina_aprox": 4,
+      "concepto": "ciclos",
+      "num_tokens": 297,
+      "posicion": 3
+    },
+    {
+      "chunk_id": "2cdd2101",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 1: Variables y Tipos",
+      "pagina_aprox": 5,
+      "concepto": "variables_y_tipos",
+      "num_tokens": 309,
+      "posicion": 4
+    },
+    {
+      "chunk_id": "a9b672dd",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 3: Ciclos",
+      "pagina_aprox": 6,
+      "concepto": "ciclos",
+      "num_tokens": 258,
+      "posicion": 5
+    },
+    {
+      "chunk_id": "485fbd00",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 6: Strings",
+      "pagina_aprox": 7,
+      "concepto": "strings",
+      "num_tokens": 166,
+      "posicion": 6
+    },
+    {
+      "chunk_id": "a24b9473",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 7: Diccionarios",
+      "pagina_aprox": 8,
+      "concepto": "diccionarios",
+      "num_tokens": 139,
+      "posicion": 7
+    },
+    {
+      "chunk_id": "0b6095fe",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 8: Recursión",
+      "pagina_aprox": 9,
+      "concepto": "recursion",
+      "num_tokens": 222,
+      "posicion": 8
+    },
+    {
+      "chunk_id": "4c28f536",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 1: Variables y Tipos",
+      "pagina_aprox": 10,
+      "concepto": "variables_y_tipos",
+      "num_tokens": 180,
+      "posicion": 9
+    },
+    {
+      "chunk_id": "f1f248f4",
+      "libro": "corpus_python_v2",
+      "titulo_libro": "Fundamentos de Python v2 — SOFIA",
+      "capitulo": "Cap 1: Variables y Tipos",
+      "pagina_aprox": 11,
+      "concepto": "variables_y_tipos",
+      "num_tokens": 298,
+      "posicion": 10
     }
   ]
 }

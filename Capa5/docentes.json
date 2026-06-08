@@ -1,0 +1,29 @@
+{
+  "msuarez": {
+    "nombre": "Marco Javier Suárez Barón",
+    "cargo": "Profesor titular — Inteligencia Computacional",
+    "password_hash": "e8add53910d354913fca70b12bb7e6c8e5a4e09a9b3d76d1747b92035ae8c6de",
+    "semestres": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ]
+  },
+  "frincon": {
+    "nombre": "Freddy Rincón",
+    "cargo": "Profesor — Programación Fundamentos",
+    "password_hash": "24c8e3f59f2b4405aa7f1113cfa5095f985f868695cc993f4f34a7f2e98a9250",
+    "semestres": [
+      1,
+      2,
+      3
+    ]
+  }
+}

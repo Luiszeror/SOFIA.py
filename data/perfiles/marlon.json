@@ -1,0 +1,51 @@
+{
+  "estudiante_id": "marlon",
+  "nombre": "Marlon",
+  "sesiones": 0,
+  "interacciones": 5,
+  "errores_por_concepto": {
+    "general": 4
+  },
+  "intentos_por_concepto": {
+    "general": [
+      1,
+      2,
+      3,
+      4,
+      1
+    ]
+  },
+  "errores_frecuentes": [
+    "general"
+  ],
+  "intentos_promedio": 2.2,
+  "score_riesgo": 1.5,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 05:42",
+  "historial_errores": [
+    {
+      "concepto": "general",
+      "tipo_error": "error_sintaxis",
+      "intento": 1,
+      "timestamp": "2026-06-08 05:40"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_sintaxis",
+      "intento": 2,
+      "timestamp": "2026-06-08 05:40"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_sintaxis",
+      "intento": 3,
+      "timestamp": "2026-06-08 05:41"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 4,
+      "timestamp": "2026-06-08 05:42"
+    }
+  ]
+}

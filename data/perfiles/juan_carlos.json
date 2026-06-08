@@ -1,0 +1,30 @@
+{
+  "estudiante_id": "juan_carlos",
+  "nombre": "Juan Carlos",
+  "sesiones": 0,
+  "interacciones": 2,
+  "errores_por_concepto": {
+    "general": 1
+  },
+  "intentos_por_concepto": {
+    "general": [
+      1,
+      2
+    ]
+  },
+  "errores_frecuentes": [
+    "general"
+  ],
+  "intentos_promedio": 1.5,
+  "score_riesgo": 1.5,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 05:32",
+  "historial_errores": [
+    {
+      "concepto": "general",
+      "tipo_error": "error_sintaxis",
+      "intento": 2,
+      "timestamp": "2026-06-08 05:32"
+    }
+  ]
+}

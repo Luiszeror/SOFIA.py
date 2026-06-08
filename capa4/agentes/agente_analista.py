@@ -20,6 +20,7 @@ UMBRAL_RIESGO = 6.5  # score sobre 10 que activa alerta
 class PerfilEstudiante:
     estudiante_id:     str
     nombre:            str = "Estudiante"
+    semestre:          int = 1
     sesiones:          int = 0
     interacciones:     int = 0
     errores_por_concepto: dict = field(default_factory=dict)
@@ -48,13 +49,14 @@ class AgenteAnalista:
     def _ruta_perfil(self, estudiante_id: str) -> Path:
         return self.directorio / f"{estudiante_id}.json"
 
-    def cargar_perfil(self, estudiante_id: str, nombre: str = "Estudiante") -> PerfilEstudiante:
+    def cargar_perfil(self, estudiante_id: str, nombre: str = "Estudiante", semestre: int = 1) -> PerfilEstudiante:
         ruta = self._ruta_perfil(estudiante_id)
         if ruta.exists():
             with open(ruta, encoding="utf-8") as f:
                 data = json.load(f)
+            data.setdefault("semestre", semestre)
             return PerfilEstudiante(**data)
-        return PerfilEstudiante(estudiante_id=estudiante_id, nombre=nombre)
+        return PerfilEstudiante(estudiante_id=estudiante_id, nombre=nombre, semestre=semestre)
 
     def guardar_perfil(self, perfil: PerfilEstudiante):
         ruta = self._ruta_perfil(perfil.estudiante_id)
@@ -112,11 +114,12 @@ class AgenteAnalista:
             )[:3]
 
         # Score de riesgo (0-10)
-        # Factores: intentos promedio altos, errores acumulados, no resuelve
-        factor_intentos = min(perfil.intentos_promedio / 5 * 4, 4)  # máx 4 puntos
-        factor_errores  = min(sum(perfil.errores_por_concepto.values()) / 10 * 3, 3)  # máx 3 puntos
-        factor_no_resuelve = 3 if (intento >= 5 and not resuelto) else 0  # 3 puntos si no resuelve
-        perfil.score_riesgo = round(factor_intentos + factor_errores + factor_no_resuelve, 1)
+        factor_intentos    = min(perfil.intentos_promedio / 5 * 4, 4)
+        factor_errores     = min(sum(perfil.errores_por_concepto.values()) / 10 * 3, 3)
+        factor_no_resuelve = 3 if (intento >= 5 and not resuelto) else 0
+        # Factor positivo: si resuelve, reduce el score
+        factor_positivo    = -1.5 if resuelto else 0
+        perfil.score_riesgo = max(0, round(factor_intentos + factor_errores + factor_no_resuelve + factor_positivo, 1))
         perfil.en_alerta = perfil.score_riesgo >= UMBRAL_RIESGO
 
         self.guardar_perfil(perfil)
@@ -142,6 +145,17 @@ class AgenteAnalista:
             partes.append("ALERTA: estudiante con alto riesgo de abandono.")
 
         return " ".join(partes) if partes else "Estudiante con buen desempeño general."
+
+
+    def registrar_respuesta_correcta(self, perfil, concepto: str) -> "PerfilEstudiante":
+        """
+        Registra que el estudiante respondió correctamente una pregunta socrática.
+        Reduce el score de riesgo.
+        """
+        perfil.score_riesgo = max(0, round(perfil.score_riesgo - 0.5, 1))
+        perfil.en_alerta    = perfil.score_riesgo >= UMBRAL_RIESGO
+        self.guardar_perfil(perfil)
+        return perfil
 
     def listar_estudiantes_en_alerta(self) -> list[dict]:
         """Retorna lista de estudiantes que superaron el umbral de riesgo."""

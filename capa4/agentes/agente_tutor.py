@@ -2,52 +2,54 @@
 AGENTE 1 — Tutor Socrático
 Capa 4 — Sistema de Tutoría Socrática UPTC
 
-Usa Google Gemini API.
-Intenta primero gemini-2.5-flash, si falla por cuota usa gemini-2.5-flash-lite-preview-06-17,
-si falla también cae a modo básico automáticamente.
+LLM: Google Gemini (cuando hay créditos) o modo básico.
 """
 
 import os
-import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MODELOS_FALLBACK = [
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
-    "gemini-2.0-flash",
-    "gemini-2.5-flash",
-]
-
-SYSTEM_PROMPT_SOCRATICO = """Eres SOFIA, un tutor de Python que sigue el método socrático estrictamente. Responde siempre en español.
+SYSTEM_PROMPT_SOCRATICO = """Eres SOFIA, un tutor socrático de Python. Respondes SIEMPRE en español.
+Tienes acceso al historial completo de la conversación — ÚSALO SIEMPRE para dar continuidad.
 
 REGLAS ABSOLUTAS:
-1. NUNCA escribas código corregido directamente.
-2. NUNCA des la respuesta al ejercicio.
-3. SIEMPRE termina tu respuesta con UNA sola pregunta que guíe al estudiante.
-4. Si el estudiante lleva más de 2 intentos fallidos, baja el nivel de abstracción — pregunta sobre una línea específica del código.
-5. Usa el material del curso (entre === MATERIAL ===) para anclar tus preguntas a ejemplos que el estudiante ya vio.
-6. Sé cálido y alentador. El error es parte del aprendizaje.
-7. Máximo 4 oraciones + la pregunta final. Sin listas, sin código.
+1. NUNCA escribas código corregido completo.
+2. NUNCA des la respuesta directamente.
+3. SIEMPRE termina con exactamente UNA pregunta socrática.
+4. Usa el material del curso (=== MATERIAL ===) para anclar tus respuestas.
+5. Sé cálido y específico. Máximo 4 oraciones + la pregunta final.
+6. NUNCA ignores el historial — si el estudiante ya preguntó sobre el tema, no repitas la explicación básica.
 
-ESTILO DE PREGUNTA SEGÚN INTENTO:
-- Intento 1-2: Pregunta conceptual amplia ("¿Qué debería retornar esta función?")
-- Intento 3-4: Pregunta sobre una línea específica ("¿Qué valor tiene x justo antes de la línea 3?")
-- Intento 5+: Pista muy concreta sin dar la solución.
+FLUJO PROGRESIVO SEGÚN PREGUNTAS CONSECUTIVAS SIN CÓDIGO:
+- Pregunta 1: Explicar el concepto con material del corpus. Terminar con pregunta amplia.
+- Pregunta 2: Dar pista más concreta usando lo que dijo antes. Mencionar el ejercicio pendiente.
+- Pregunta 3+: Casi revelar la solución en forma de pregunta. Invitar a escribir código.
 
-NUNCA uses: La respuesta es... / Deberías escribir... / El código correcto es...
-"""
+CUANDO HAY CÓDIGO CON ERROR:
+- Mencionar EXPLÍCITAMENTE qué pide el ejercicio y cómo difiere de lo que hizo el estudiante.
+- Conectar con lo conversado antes si aplica.
+- Señalar la línea específica del código que causa el problema.
+- Terminar con pregunta sobre ESA línea específica.
+
+CUANDO EL CÓDIGO ES CORRECTO:
+- Felicitar genuinamente y conectar con el proceso.
+- Hacer pregunta de consolidación sobre el concepto.
+
+FLUJO DE EVALUACIÓN CONJUNTA:
+- SIEMPRE referenciar la conversación previa: "Recuerda que hablamos de...".
+- Guiar paso a paso hacia la corrección con preguntas cada vez más específicas."""
 
 
-def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento, historial):
+def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
+                     historial, enunciado_ejercicio=None, preguntas_sin_codigo=0):
+
     perfil_texto = ""
     if perfil.get("errores_frecuentes"):
         errores = ", ".join(perfil["errores_frecuentes"][:3])
         perfil_texto = (
             f"\n[Perfil del estudiante]\n"
             f"Errores frecuentes en: {errores}\n"
-            f"Intentos promedio: {perfil.get('intentos_promedio', 'N/A')}\n"
             f"Score de riesgo: {perfil.get('score_riesgo', 0):.1f}/10\n"
         )
 
@@ -68,30 +70,53 @@ def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento, his
         f"Intento número: {intento}\n"
     )
 
+    ejercicio_txt = ""
+    if enunciado_ejercicio:
+        ejercicio_txt = (
+            f"\n[Ejercicio actual del estudiante]\n"
+            f"Nombre: {enunciado_ejercicio.get('nombre', '')}\n"
+            f"Enunciado: {enunciado_ejercicio.get('descripcion', '')}\n"
+            f"Salida esperada: {enunciado_ejercicio.get('salida_esperada', '')}\n"
+            f"Conecta el error con este ejercicio específico.\n"
+        )
+
+    if preguntas_sin_codigo == 0:
+        modo_txt = "[Modo: evaluación de código — conectar con conversación previa]"
+    elif preguntas_sin_codigo == 1:
+        modo_txt = "[Modo: primera pregunta — explicar con corpus, pregunta amplia]"
+    elif preguntas_sin_codigo == 2:
+        modo_txt = "[Modo: segunda pregunta — pista concreta, mencionar ejercicio]"
+    else:
+        modo_txt = "[Modo: tercera+ pregunta — casi revelar solución, invitar a escribir código]"
+
     historial_texto = ""
     if historial:
-        historial_texto = "\n[Conversación previa]\n"
-        for msg in historial[-4:]:
+        historial_texto = "\n[Historial de la sesión]\n"
+        for msg in historial[-12:]:
             rol = "Estudiante" if msg["role"] == "user" else "SOFIA"
-            historial_texto += f"{rol}: {msg['content'][:200]}\n"
+            contenido = msg["content"][:300].replace("```python", "[código]").replace("```", "")
+            historial_texto += f"{rol}: {contenido}\n"
 
     return (
         f"{SYSTEM_PROMPT_SOCRATICO}\n\n"
+        f"{modo_txt}\n"
         f"{perfil_texto}\n"
+        f"{ejercicio_txt}\n"
         f"{diagnostico}\n"
         f"{contexto_rag}\n\n"
         f"{historial_texto}\n"
         f"[Código actual del estudiante]\n"
         f"```python\n{codigo}\n```\n\n"
-        f"Genera tu respuesta socrática en español para el intento #{intento}. "
-        f"Máximo 4 oraciones y termina con UNA pregunta."
+        f"Genera tu respuesta socrática COMPLETA en español para el intento #{intento}. "
+        f"Termina SIEMPRE con UNA pregunta socrática."
     )
 
 
 class AgenteTutor:
     """
-    Agente 1 — Tutor Socrático usando Google Gemini.
-    Intenta los modelos en orden hasta que uno funcione.
+    Agente 1 — Tutor Socrático.
+    Intenta usar Gemini si hay créditos, si no lanza ValueError
+    para que el orquestador active el modo básico.
     """
 
     def __init__(self, temperatura: float = 0.4):
@@ -102,32 +127,44 @@ class AgenteTutor:
         if not api_key:
             raise ValueError("GOOGLE_API_KEY no encontrada en .env")
 
-        genai.configure(api_key=api_key)
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
 
-        # Intentar cada modelo hasta encontrar uno disponible
-        for nombre_modelo in MODELOS_FALLBACK:
-            try:
-                modelo = genai.GenerativeModel(
-                    model_name=nombre_modelo,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=temperatura,
-                        max_output_tokens=400,
-                    ),
-                )
-                # Test rápido para verificar que el modelo responde
-                test = modelo.generate_content("Di solo: ok")
-                self.modelo        = modelo
-                self.modelo_activo = nombre_modelo
-                print(f"  [AgenteTutor] Modelo activo: {nombre_modelo}")
-                break
-            except Exception as e:
-                print(f"  [AgenteTutor] {nombre_modelo} no disponible: {type(e).__name__} — probando siguiente...")
-                continue
+            modelos = [
+                "gemini-2.0-flash-lite",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
+                "gemini-1.5-flash-8b",
+            ]
+            for nombre in modelos:
+                try:
+                    modelo = genai.GenerativeModel(
+                        model_name=nombre,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=temperatura,
+                            max_output_tokens=1500,
+                        ),
+                    )
+                    test = modelo.generate_content("Responde solo: ok")
+                    if test.text:
+                        self._modelo       = modelo
+                        self.modelo_activo = nombre
+                        print(f"  [AgenteTutor] Modelo activo: {nombre}")
+                        break
+                except Exception as e:
+                    print(f"  [AgenteTutor] {nombre}: {type(e).__name__} — siguiente...")
+                    continue
 
-        if not self.modelo_activo:
-            raise ValueError("Ningún modelo de Gemini está disponible con esta API key.")
+            if not self.modelo_activo:
+                raise ValueError("Sin cuota disponible en Gemini.")
 
-    def responder(self, codigo, resultado_capa3, resultado_capa2, perfil, intento=1, historial=None):
+        except ImportError:
+            raise ValueError("google-generativeai no instalado.")
+
+    def responder(self, codigo, resultado_capa3, resultado_capa2, perfil,
+                  intento=1, historial=None, enunciado_ejercicio=None,
+                  preguntas_sin_codigo=0):
         if historial is None:
             historial = []
 
@@ -135,33 +172,13 @@ class AgenteTutor:
         fuentes      = resultado_capa2.fuentes if resultado_capa2 else []
 
         prompt = construir_prompt(
-            codigo, resultado_capa3, contexto_rag, perfil, intento, historial
+            codigo, resultado_capa3, contexto_rag, perfil, intento, historial,
+            enunciado_ejercicio=enunciado_ejercicio,
+            preguntas_sin_codigo=preguntas_sin_codigo,
         )
 
-        # Intentar con el modelo activo, si falla probar los siguientes
-        texto = None
-        for nombre_modelo in MODELOS_FALLBACK:
-            try:
-                modelo_temp = genai.GenerativeModel(
-                    model_name=nombre_modelo,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=self.temperatura,
-                        max_output_tokens=400,
-                    ),
-                )
-                respuesta = modelo_temp.generate_content(prompt)
-                texto = respuesta.text.strip()
-                if self.modelo_activo != nombre_modelo:
-                    print(f"  [AgenteTutor] Cambiando a modelo: {nombre_modelo}")
-                    self.modelo_activo = nombre_modelo
-                    self.modelo = modelo_temp
-                break
-            except Exception as e:
-                print(f"  [AgenteTutor] {nombre_modelo} falló: {type(e).__name__} — probando siguiente...")
-                continue
-
-        if texto is None:
-            raise ValueError("Ningún modelo de Gemini respondió correctamente.")
+        resp  = self._modelo.generate_content(prompt)
+        texto = resp.text.strip()
 
         return {
             "respuesta":     texto,

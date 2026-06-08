@@ -73,6 +73,7 @@ class ResultadoEvaluacion:
     tiempo_total_ms: float
     intento_numero: int
     sugerencia_socratica: str
+    consola_output: str = ""
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -92,6 +93,27 @@ NOMBRES_PROHIBIDOS = {
     "shutil", "pathlib",
 }
 
+
+
+def _formatear_consola(resultado_sandbox: dict, codigo: str = "") -> str:
+    """Genera output estilo consola Python."""
+    stdout = resultado_sandbox.get("stdout", "").strip()
+    stderr = resultado_sandbox.get("stderr", "").strip()
+    exc    = resultado_sandbox.get("excepcion", "")
+    tipo   = resultado_sandbox.get("tipo_excepcion", "")
+    linea  = resultado_sandbox.get("linea_error")
+
+    partes = []
+    if stdout:
+        partes.append(stdout)
+    if exc:
+        partes.append("Traceback (most recent call last):")
+        if linea:
+            partes.append(f'  File "<codigo_estudiante>", line {linea}')
+        partes.append(f"{exc}")
+    if stderr and stderr not in (exc or ""):
+        partes.append(stderr)
+    return "\n".join(partes) if partes else ""
 
 class AnalizadorSeguridad(ast.NodeVisitor):
     """Recorre el AST buscando patrones peligrosos."""
@@ -407,6 +429,15 @@ class EvaluadorPython:
             )
             linea_f = None
 
+        # Consola output
+        consola = _formatear_consola(resultado_base, codigo)
+        if not consola and resultados_casos:
+            primer = resultados_casos[0]
+            if primer.salida_obtenida and "ERROR:" not in primer.salida_obtenida:
+                consola = primer.salida_obtenida
+            elif "ERROR:" in (primer.salida_obtenida or ""):
+                consola = primer.salida_obtenida.replace("ERROR: ", "")
+
         tiempo_total_ms = round((time.perf_counter() - t_total_inicio) * 1000, 2)
 
         # ── PASO 7: Retornar JSON estructurado ────────────────────────────
@@ -421,6 +452,7 @@ class EvaluadorPython:
             tiempo_total_ms      = tiempo_total_ms,
             intento_numero       = intento_numero,
             sugerencia_socratica = sugerencia,
+            consola_output       = consola,
             metadata             = {
                 "longitud_codigo_chars": len(codigo),
                 "num_nodos_ast": sum(1 for _ in ast.walk(arbol)),
@@ -524,6 +556,7 @@ class EvaluadorPython:
         )
 
     def _resultado_sintaxis(self, e: SyntaxError, concepto, intento, t) -> ResultadoEvaluacion:
+        consola = f"  File \"<codigo_estudiante>\", line {e.lineno}\nSyntaxError: {e.msg}"
         return ResultadoEvaluacion(
             tipo_error           = TipoError.SINTAXIS,
             concepto             = concepto,
@@ -535,9 +568,12 @@ class EvaluadorPython:
             tiempo_total_ms      = round(t * 1000, 2),
             intento_numero       = intento,
             sugerencia_socratica = _get_sugerencia(TipoError.SINTAXIS),
+            consola_output       = consola,
         )
 
     def _resultado_sintaxis_str(self, res, concepto, intento, t) -> ResultadoEvaluacion:
+        linea = res.get("linea_error")
+        consola = f"  File \"<codigo_estudiante>\", line {linea}\n{res['excepcion']}" if linea else res["excepcion"]
         return ResultadoEvaluacion(
             tipo_error           = TipoError.SINTAXIS,
             concepto             = concepto,
@@ -549,4 +585,5 @@ class EvaluadorPython:
             tiempo_total_ms      = round(t * 1000, 2),
             intento_numero       = intento,
             sugerencia_socratica = _get_sugerencia(TipoError.SINTAXIS),
+            consola_output       = consola,
         )

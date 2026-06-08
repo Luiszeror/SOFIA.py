@@ -1,0 +1,38 @@
+{
+  "estudiante_id": "juana",
+  "nombre": "Juana",
+  "semestre": 9,
+  "sesiones": 0,
+  "interacciones": 3,
+  "errores_por_concepto": {
+    "strings": 2
+  },
+  "intentos_por_concepto": {
+    "strings": [
+      1,
+      2,
+      1
+    ]
+  },
+  "errores_frecuentes": [
+    "strings"
+  ],
+  "intentos_promedio": 1.3,
+  "score_riesgo": 1.6,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 06:41",
+  "historial_errores": [
+    {
+      "concepto": "strings",
+      "tipo_error": "error_logico",
+      "intento": 1,
+      "timestamp": "2026-06-08 06:37"
+    },
+    {
+      "concepto": "strings",
+      "tipo_error": "error_sintaxis",
+      "intento": 1,
+      "timestamp": "2026-06-08 06:41"
+    }
+  ]
+}
