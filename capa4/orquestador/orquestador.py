@@ -123,8 +123,8 @@ class Orquestador:
         # ── Paso del grafo ─────────────────────────────────────
         comunidad = self._consultar_grafo(
             estudiante_id=estudiante_id,
-            tipo_error=diagnostico["tipo_error"],
-            concepto=diagnostico["concepto"],
+            tipo_error=resultado_dict["tipo_error"],
+            concepto=resultado_dict["concepto"],
             perfil=perfil  # objeto con .score_riesgo, .errores_por_concepto etc.
         )
 

@@ -3,17 +3,66 @@
   "nombre": "Estean",
   "semestre": 1,
   "sesiones": 0,
-  "interacciones": 1,
-  "errores_por_concepto": {},
+  "interacciones": 7,
+  "errores_por_concepto": {
+    "ciclos": 6
+  },
   "intentos_por_concepto": {
     "general": [
       1
+    ],
+    "ciclos": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
     ]
   },
-  "errores_frecuentes": [],
-  "intentos_promedio": 1.0,
-  "score_riesgo": 0,
-  "en_alerta": false,
-  "ultima_sesion": "2026-06-08 15:50",
-  "historial_errores": []
+  "errores_frecuentes": [
+    "ciclos"
+  ],
+  "intentos_promedio": 3.1,
+  "score_riesgo": 7.3,
+  "en_alerta": true,
+  "ultima_sesion": "2026-06-09 03:33",
+  "historial_errores": [
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-09 03:32"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_logico",
+      "intento": 2,
+      "timestamp": "2026-06-09 03:33"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 3,
+      "timestamp": "2026-06-09 03:33"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 4,
+      "timestamp": "2026-06-09 03:33"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 5,
+      "timestamp": "2026-06-09 03:33"
+    },
+    {
+      "concepto": "ciclos",
+      "tipo_error": "error_runtime",
+      "intento": 6,
+      "timestamp": "2026-06-09 03:33"
+    }
+  ]
 }

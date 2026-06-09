@@ -1,6 +1,6 @@
 # community/louvain_detector.py
 import networkx as nx
-import community as community_louvain  # python-louvain
+import error_community.community as community_louvain  # python-louvain
 
 
 def detect_communities(

@@ -1,8 +1,8 @@
 # api/community_service.py
-from data.graph_builder import build_graph
-from model.train import train, get_student_embeddings
-from community.similarity_graph import build_similarity_graph
-from community.louvain_detector import detect_communities, label_communities
+from error_community.data.graph_builder import build_graph
+from error_community.model.train import train, get_student_embeddings
+from error_community.community.similarity_graph import build_similarity_graph
+from error_community.community.louvain_detector import detect_communities, label_communities
 
 
 class CommunityService:

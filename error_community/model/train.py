@@ -1,8 +1,8 @@
 # model/train.py
 import torch
 import torch.nn.functional as F
-from data.graph_builder import build_graph
-from gnn_encoder import (build_model)
+from error_community.data.graph_builder import build_graph
+from error_community.model.gnn_encoder import (build_model)
 
 
 def contrastive_loss(emb, edge_index, margin=0.5):

@@ -3,28 +3,53 @@
   "nombre": "Gaby",
   "semestre": 10,
   "sesiones": 0,
-  "interacciones": 1,
+  "interacciones": 4,
   "errores_por_concepto": {
-    "diccionarios": 1
+    "diccionarios": 1,
+    "funciones": 3
   },
   "intentos_por_concepto": {
     "diccionarios": [
       1
+    ],
+    "funciones": [
+      1,
+      1,
+      1
     ]
   },
   "errores_frecuentes": [
+    "funciones",
     "diccionarios"
   ],
   "intentos_promedio": 1.0,
-  "score_riesgo": 1.1,
+  "score_riesgo": 2.0,
   "en_alerta": false,
-  "ultima_sesion": "2026-06-08 15:11",
+  "ultima_sesion": "2026-06-09 03:29",
   "historial_errores": [
     {
       "concepto": "diccionarios",
       "tipo_error": "error_runtime",
       "intento": 1,
       "timestamp": "2026-06-08 15:11"
+    },
+    {
+      "concepto": "funciones",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-09 03:28"
+    },
+    {
+      "concepto": "funciones",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-09 03:28"
+    },
+    {
+      "concepto": "funciones",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-09 03:29"
     }
   ]
 }

@@ -1,0 +1,100 @@
+{
+  "estudiante_id": "carlos_amaya",
+  "nombre": "Carlos Amaya",
+  "semestre": 1,
+  "sesiones": 0,
+  "interacciones": 11,
+  "errores_por_concepto": {
+    "general": 11
+  },
+  "intentos_por_concepto": {
+    "general": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "errores_frecuentes": [
+    "general"
+  ],
+  "intentos_promedio": 6.0,
+  "score_riesgo": 10,
+  "en_alerta": true,
+  "ultima_sesion": "2026-06-09 03:34",
+  "historial_errores": [
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 1,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 2,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 3,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 4,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 5,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 6,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 7,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 8,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 9,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 10,
+      "timestamp": "2026-06-09 03:34"
+    },
+    {
+      "concepto": "general",
+      "tipo_error": "error_runtime",
+      "intento": 11,
+      "timestamp": "2026-06-09 03:34"
+    }
+  ]
+}
