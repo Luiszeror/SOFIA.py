@@ -149,9 +149,7 @@ class Orquestador:
                 respuesta_texto = resp_tutor["respuesta"]
                 fuentes         = resp_tutor["fuentes"]
             except Exception as e:
-                import traceback
-                print(f"  [Orquestador] Error LLM: {type(e).__name__}: {e}")
-                traceback.print_exc()
+                print(f"  [Orquestador] LLM no disponible: {type(e).__name__} — modo básico")
                 respuesta_texto = resultado_eval.sugerencia_socratica
                 if resultado_rag.fragmentos:
                     frag = resultado_rag.fragmentos[0]
@@ -215,10 +213,26 @@ class Orquestador:
             historial = []
 
         # RAG — buscar contexto relevante
+        # Buscar primero por concepto_hint (filtro directo por categoría)
+        # Si no hay resultados, buscar sin filtro
         resultado_rag = self.retriever.recuperar(
-            query         = pregunta,
-            concepto_hint = concepto_hint,
+            query                = pregunta,
+            concepto_hint        = concepto_hint,
+            filtrar_por_concepto = True,   # busca solo en chunks de ese concepto
         )
+        # Si no encontró nada en el concepto, buscar en todo el corpus
+        if not resultado_rag.fragmentos:
+            resultado_rag = self.retriever.recuperar(
+                query         = pregunta,
+                concepto_hint = concepto_hint,
+            )
+
+        # Extraer fragmento del corpus SIEMPRE (antes del LLM)
+        fragmento_corpus = ""
+        if resultado_rag.fragmentos:
+            frag = resultado_rag.fragmentos[0]
+            texto_limpio = frag.texto.replace("\n", " ").strip()
+            fragmento_corpus = texto_limpio[:500] + ("..." if len(texto_limpio) > 500 else "")
 
         if self._llm_disponible:
             try:
@@ -240,30 +254,56 @@ class Orquestador:
                     historial       = historial,
                 )
                 return {
-                    "respuesta": resp["respuesta"],
-                    "fuentes":   resp["fuentes"],
+                    "respuesta":        resp["respuesta"],
+                    "fuentes":          resp["fuentes"],
+                    "fragmento_corpus": fragmento_corpus,
+                    "fragmentos":       [{"texto": f.texto, "capitulo": f.capitulo}
+                                         for f in resultado_rag.fragmentos],
                 }
             except Exception as e:
-                import traceback
-                print(f"  [Orquestador] Error LLM en pregunta: {type(e).__name__}: {e}")
-                traceback.print_exc()
+                print(f"  [Orquestador] LLM no disponible: {type(e).__name__} — usando fallback")
 
         # Fallback — respuesta básica sin LLM
         if resultado_rag.fragmentos:
             frag = resultado_rag.fragmentos[0]
-            # Extraer solo las primeras 2 oraciones del fragmento
-            oraciones = [s.strip() for s in frag.texto.replace("\n"," ").split(".") if len(s.strip()) > 20][:2]
-            extracto  = ". ".join(oraciones) + "." if oraciones else frag.texto[:200]
+            oraciones = [s.strip() for s in frag.texto.replace("\n"," ").split(".") if len(s.strip()) > 20][:3]
+            extracto  = ". ".join(oraciones) + "." if oraciones else frag.texto[:300]
             respuesta = (
-                f"Según el material del curso ({frag.capitulo}): {extracto}\n\n"
-                f"¿Esto responde tu pregunta?"
+                f"Del material del curso ({frag.capitulo}):\n\n"
+                f"{extracto}\n\n"
+                f"¿Qué parte de esto te genera más dudas?"
             )
         else:
-            respuesta = "No encontré material específico sobre eso. ¿Puedes reformular la pregunta?"
+            # Buscar sin filtro de concepto como último recurso
+            rag_sin_filtro = self.retriever.recuperar(query=pregunta, concepto_hint="general")
+            if rag_sin_filtro.fragmentos:
+                frag = rag_sin_filtro.fragmentos[0]
+                oraciones = [s.strip() for s in frag.texto.replace("\n"," ").split(".") if len(s.strip()) > 20][:2]
+                extracto  = ". ".join(oraciones) + "."
+                respuesta = (
+                    f"Del material del curso ({frag.capitulo}):\n\n"
+                    f"{extracto}\n\n"
+                    f"¿Qué parte te genera más dudas?"
+                )
+            else:
+                # Detectar si la pregunta es sobre otro lenguaje
+                otros_lenguajes = ["java", "javascript", "c++", "c#", "php", "ruby",
+                                   "swift", "kotlin", "syso", "system.out", "console.log",
+                                   "printf", "cout", "println"]
+                pregunta_lower = pregunta.lower()
+                if any(lang in pregunta_lower for lang in otros_lenguajes):
+                    respuesta = ("Este curso se enfoca en Python. "
+                                 "Lo que preguntas parece ser de otro lenguaje. "
+                                 "¿Te gustaría explorar el concepto equivalente en Python?")
+                else:
+                    respuesta = "No encontré ese tema en el material del curso. ¿Puedes ser más específico sobre qué parte de Python quieres explorar?"
 
         return {
-            "respuesta": respuesta,
-            "fuentes":   resultado_rag.fuentes,
+            "respuesta":        respuesta,
+            "fuentes":          resultado_rag.fuentes,
+            "fragmento_corpus": fragmento_corpus,
+            "fragmentos":       [{"texto": f.texto, "capitulo": f.capitulo}
+                                 for f in resultado_rag.fragmentos],
         }
 
     def evaluar_respuesta_estudiante(

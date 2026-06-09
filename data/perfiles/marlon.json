@@ -1,8 +1,9 @@
 {
   "estudiante_id": "marlon",
   "nombre": "Marlon",
+  "semestre": 7,
   "sesiones": 0,
-  "interacciones": 5,
+  "interacciones": 7,
   "errores_por_concepto": {
     "general": 4
   },
@@ -12,16 +13,18 @@
       2,
       3,
       4,
-      1
+      1,
+      1,
+      2
     ]
   },
   "errores_frecuentes": [
     "general"
   ],
-  "intentos_promedio": 2.2,
-  "score_riesgo": 1.5,
+  "intentos_promedio": 2.0,
+  "score_riesgo": 1.3,
   "en_alerta": false,
-  "ultima_sesion": "2026-06-08 05:42",
+  "ultima_sesion": "2026-06-09 02:03",
   "historial_errores": [
     {
       "concepto": "general",

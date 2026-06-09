@@ -1,0 +1,30 @@
+{
+  "estudiante_id": "valen",
+  "nombre": "Valen",
+  "semestre": 1,
+  "sesiones": 0,
+  "interacciones": 1,
+  "errores_por_concepto": {
+    "condicionales": 1
+  },
+  "intentos_por_concepto": {
+    "condicionales": [
+      1
+    ]
+  },
+  "errores_frecuentes": [
+    "condicionales"
+  ],
+  "intentos_promedio": 1.0,
+  "score_riesgo": 0.6,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 15:19",
+  "historial_errores": [
+    {
+      "concepto": "condicionales",
+      "tipo_error": "error_sintaxis",
+      "intento": 1,
+      "timestamp": "2026-06-08 15:19"
+    }
+  ]
+}
