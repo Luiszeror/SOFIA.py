@@ -28,3 +28,8 @@ pydantic                # validación de los JSON estructurados
 tenacity                # reintentos automáticos en llamadas al LLM
 loguru                  # logging legible para desarrollo
 
+# ── error_community: Grafo de Redes de Aprendizaje ────────
+torch
+torch-geometric
+networkx
+python-louvain

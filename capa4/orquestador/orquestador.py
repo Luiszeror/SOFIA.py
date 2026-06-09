@@ -24,7 +24,7 @@ from capa2.retriever.retriever_rag import RetrieverRAG
 from capa4.agentes.agente_tutor import AgenteTutor
 from capa4.agentes.agente_analista import AgenteAnalista
 from capa4.agentes.agente_generador import AgenteGenerador
-
+from error_community.api.community_service import CommunityService
 
 class Orquestador:
     """
@@ -120,6 +120,14 @@ class Orquestador:
             resuelto  = resuelto,
         )
 
+        # ── Paso del grafo ─────────────────────────────────────
+        comunidad = self._consultar_grafo(
+            estudiante_id=estudiante_id,
+            tipo_error=diagnostico["tipo_error"],
+            concepto=diagnostico["concepto"],
+            perfil=perfil  # objeto con .score_riesgo, .errores_por_concepto etc.
+        )
+
         # ── PASO 4: Agente Tutor — Respuesta socrática ───────────────────
         if self._llm_disponible:
             try:
@@ -184,6 +192,7 @@ class Orquestador:
             "tiempo_ms":        resultado_rag.tiempo_ms,
             "stdout_codigo":    stdout_codigo,
             "consola_output":   resultado_dict.get("consola_output", ""),
+            "comunidad": comunidad,
         }
 
     def responder_pregunta(
@@ -319,4 +328,85 @@ class Orquestador:
             "fuentes":      [],
             "fue_correcto": False,
         }
+
+    def _consultar_grafo(self, estudiante_id: str, tipo_error: str,
+                         concepto: str, perfil) -> dict:
+        """
+        Traduce los datos de SOFIA.py al formato del grafo y
+        consulta CommunityService. Si falla, retorna dict vacío
+        para no interrumpir la sesión del estudiante.
+        """
+
+        # Mapeo directo desde los 5 tipos de evaluador.py
+        severidad_map = {
+            "error_sintaxis": 1,
+            "error_logico": 2,
+            "error_runtime": 3,
+            "error_timeout": 3,
+            "error_seguridad": 4,
+            "correcto": 0,
+        }
+
+        # Mapeo desde los 9 conceptos del repositorio de casos
+        concepto_map = {
+            "variables": 0,
+            "funciones": 1,
+            "condicionales": 2,
+            "ciclos": 3,
+            "listas": 4,
+            "diccionarios": 5,
+            "clases": 6,
+            "recursion": 7,
+            "strings": 8,
+        }
+
+        try:
+            # Construir datos desde el perfil real de SOFIA.py
+            # perfil es un objeto con atributos (no un dict)
+            estudiante_data = {
+                "id": estudiante_id,
+                "total_attempts": getattr(perfil, "interacciones", 1),
+                "error_rate": min(getattr(perfil, "score_riesgo", 0) / 10.0, 1.0),
+                "avg_time_sec": getattr(perfil, "intentos_promedio", 1) * 60,
+            }
+
+            error_data = {
+                "type_id": concepto_map.get(concepto, 0),
+                "frequency": getattr(perfil, "errores_por_concepto", {}).get(concepto, 1),
+                "severity": severidad_map.get(tipo_error, 2),
+                "module_id": concepto_map.get(concepto, 0),
+            }
+
+            concept_data = {
+                "concept_id": concepto_map.get(concepto, 0),
+                "semester": 1,
+                "difficulty": 0.7,
+            }
+
+            # Mapa de errores por estudiante para label_communities
+            student_error_map = {
+                estudiante_id: getattr(perfil, "errores_frecuentes", [tipo_error])
+            }
+
+            self._community_service.run_pipeline(
+                students=[estudiante_data],
+                errors=[error_data],
+                concepts=[concept_data],
+                student_commits_error=[(0, 0)],
+                student_studies_concept=[(0, 0)],
+                error_maps_concept=[(0, 0)],
+                student_error_map=student_error_map,
+            )
+
+            return self._community_service.get_community_for_student(estudiante_id)
+
+        except Exception as e:
+            # Modo degradado: el tutor sigue funcionando sin el grafo
+            print(f"[GRL-DCE] Advertencia: {e}")
+            return {
+                "community": None,
+                "dominant_errors": [tipo_error],
+                "risk_level": "unknown",
+                "size": 1,
+            }
 

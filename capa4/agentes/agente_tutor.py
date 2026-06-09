@@ -3,6 +3,7 @@ AGENTE 1 — Tutor Socrático
 Capa 4 — Sistema de Tutoría Socrática UPTC
 
 LLM: Google Gemini (cuando hay créditos) o modo básico.
+Integración: módulo GRL-DCE (error_community) para contexto de comunidad de error.
 """
 
 import os
@@ -41,18 +42,81 @@ FLUJO DE EVALUACIÓN CONJUNTA:
 - Guiar paso a paso hacia la corrección con preguntas cada vez más específicas."""
 
 
-def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
-                     historial, enunciado_ejercicio=None, preguntas_sin_codigo=0):
+# ─────────────────────────────────────────────────────────────────────────────
+# Función auxiliar: contexto de comunidad para el prompt
+# ─────────────────────────────────────────────────────────────────────────────
 
+def _construir_contexto_comunidad(comunidad: dict) -> str:
+    """
+    Genera el fragmento de contexto grupal para incluir en el prompt socrático.
+
+    Solo añade contexto si la comunidad tiene más de 1 miembro — si el
+    estudiante es el único en su comunidad, no hay patrón grupal que reportar.
+
+    Args:
+        comunidad: dict devuelto por CommunityService.get_community_for_student()
+                   Tiene claves: community, dominant_errors, risk_level, size.
+                   Puede ser None o tener community=None si el módulo falló.
+
+    Returns:
+        String con el fragmento a insertar en el prompt, o "" si no aplica.
+    """
+    if not comunidad or not comunidad.get("community"):
+        return ""
+
+    size = comunidad.get("size", 1)
+    if size <= 1:
+        return ""   # sin compañeros de comunidad → no hay patrón grupal
+
+    errores  = comunidad.get("dominant_errors", [])
+    riesgo   = comunidad.get("risk_level", "desconocido")
+    n_otros  = size - 1
+
+    errores_str = ", ".join(errores) if errores else "no especificados"
+
+    return (
+        f"\n[Patrón grupal detectado por el sistema]\n"
+        f"Este estudiante comparte el patrón de error ({errores_str}) con "
+        f"{n_otros} estudiante(s) más del grupo.\n"
+        f"Esto indica una brecha conceptual sistemática, no un caso aislado.\n"
+        f"Nivel de riesgo grupal: {riesgo}.\n"
+        f"Orienta tu pregunta socrática hacia el concepto raíz de ese patrón "
+        f"grupal, no solo al error puntual.\n"
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Constructor del prompt completo
+# ─────────────────────────────────────────────────────────────────────────────
+
+def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
+                     historial, enunciado_ejercicio=None,
+                     preguntas_sin_codigo=0, comunidad=None):
+    """
+    Construye el prompt completo para el LLM.
+
+    Parámetros nuevos respecto a la versión anterior:
+        comunidad (dict | None): resultado de CommunityService. Si se pasa,
+            se añade un bloque de contexto grupal al prompt. Si es None o
+            vacío, el prompt queda idéntico al anterior — sin regresión.
+    """
+
+    # ── Perfil del estudiante ────────────────────────────────────────────────
     perfil_texto = ""
-    if perfil.get("errores_frecuentes"):
-        errores = ", ".join(perfil["errores_frecuentes"][:3])
+    errores_freq = perfil.get("errores_frecuentes") if isinstance(perfil, dict) \
+                   else getattr(perfil, "errores_frecuentes", None)
+    score        = perfil.get("score_riesgo", 0) if isinstance(perfil, dict) \
+                   else getattr(perfil, "score_riesgo", 0)
+
+    if errores_freq:
+        errores_str = ", ".join(errores_freq[:3])
         perfil_texto = (
             f"\n[Perfil del estudiante]\n"
-            f"Errores frecuentes en: {errores}\n"
-            f"Score de riesgo: {perfil.get('score_riesgo', 0):.1f}/10\n"
+            f"Errores frecuentes en: {errores_str}\n"
+            f"Score de riesgo: {score:.1f}/10\n"
         )
 
+    # ── Diagnóstico del evaluador ────────────────────────────────────────────
     tipo_error    = resultado_capa3.get("tipo_error", "general")
     concepto      = resultado_capa3.get("concepto", "general")
     msg_tecnico   = resultado_capa3.get("mensaje_tecnico", "")
@@ -67,9 +131,10 @@ def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
         f"Mensaje técnico: {msg_tecnico}\n"
         + (f"Línea del error: {linea_error}\n" if linea_error else "")
         + f"Casos de prueba: {casos_pasados}/{casos_total} correctos\n"
-        f"Intento número: {intento}\n"
+          f"Intento número: {intento}\n"
     )
 
+    # ── Enunciado del ejercicio activo ───────────────────────────────────────
     ejercicio_txt = ""
     if enunciado_ejercicio:
         ejercicio_txt = (
@@ -80,6 +145,7 @@ def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
             f"Conecta el error con este ejercicio específico.\n"
         )
 
+    # ── Modo progresivo según preguntas sin código ───────────────────────────
     if preguntas_sin_codigo == 0:
         modo_txt = "[Modo: evaluación de código — conectar con conversación previa]"
     elif preguntas_sin_codigo == 1:
@@ -89,18 +155,24 @@ def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
     else:
         modo_txt = "[Modo: tercera+ pregunta — casi revelar solución, invitar a escribir código]"
 
+    # ── Historial reciente ───────────────────────────────────────────────────
     historial_texto = ""
     if historial:
         historial_texto = "\n[Historial de la sesión]\n"
         for msg in historial[-12:]:
-            rol = "Estudiante" if msg["role"] == "user" else "SOFIA"
+            rol      = "Estudiante" if msg["role"] == "user" else "SOFIA"
             contenido = msg["content"][:300].replace("```python", "[código]").replace("```", "")
             historial_texto += f"{rol}: {contenido}\n"
 
+    # ── NUEVO: contexto grupal del grafo GRL-DCE ─────────────────────────────
+    comunidad_txt = _construir_contexto_comunidad(comunidad)
+
+    # ── Ensamblado final del prompt ──────────────────────────────────────────
     return (
         f"{SYSTEM_PROMPT_SOCRATICO}\n\n"
         f"{modo_txt}\n"
         f"{perfil_texto}\n"
+        f"{comunidad_txt}\n"   # ← bloque nuevo; vacío si no hay comunidad
         f"{ejercicio_txt}\n"
         f"{diagnostico}\n"
         f"{contexto_rag}\n\n"
@@ -112,11 +184,22 @@ def construir_prompt(codigo, resultado_capa3, contexto_rag, perfil, intento,
     )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Clase principal
+# ─────────────────────────────────────────────────────────────────────────────
+
 class AgenteTutor:
     """
     Agente 1 — Tutor Socrático.
-    Intenta usar Gemini si hay créditos, si no lanza ValueError
+
+    Intenta usar Gemini si hay créditos; si no, lanza ValueError
     para que el orquestador active el modo básico.
+
+    Cambio respecto a la versión anterior:
+        El método responder() acepta el parámetro opcional `comunidad`
+        (dict devuelto por CommunityService). Si se pasa, enriquece el
+        prompt con el patrón grupal de error. Si no se pasa (None por
+        defecto), el comportamiento es idéntico a la versión original.
     """
 
     def __init__(self, temperatura: float = 0.4):
@@ -162,19 +245,45 @@ class AgenteTutor:
         except ImportError:
             raise ValueError("google-generativeai no instalado.")
 
+    # ─────────────────────────────────────────────────────────────────────────
     def responder(self, codigo, resultado_capa3, resultado_capa2, perfil,
                   intento=1, historial=None, enunciado_ejercicio=None,
-                  preguntas_sin_codigo=0):
+                  preguntas_sin_codigo=0, comunidad=None):
+        """
+        Genera la respuesta socrática del tutor.
+
+        Args:
+            codigo              : código Python enviado por el estudiante.
+            resultado_capa3     : dict con tipo_error, concepto, mensaje_tecnico, etc.
+            resultado_capa2     : objeto ResultadoRAG con .contexto_llm y .fuentes.
+            perfil              : objeto o dict con score_riesgo, errores_frecuentes, etc.
+            intento             : número de intento actual.
+            historial           : lista de mensajes previos de la sesión.
+            enunciado_ejercicio : dict con nombre, descripcion, salida_esperada.
+            preguntas_sin_codigo: contador de preguntas consecutivas sin código.
+            comunidad           : dict de CommunityService (NUEVO, opcional).
+                                  Claves: community, dominant_errors, risk_level, size.
+                                  Si es None, no se añade contexto grupal al prompt.
+
+        Returns:
+            dict con respuesta, tipo_error, concepto, fuentes, tokens_usados, modelo_usado.
+        """
         if historial is None:
             historial = []
 
         contexto_rag = resultado_capa2.contexto_llm if resultado_capa2 else "Sin material relevante."
-        fuentes      = resultado_capa2.fuentes if resultado_capa2 else []
+        fuentes      = resultado_capa2.fuentes      if resultado_capa2 else []
 
         prompt = construir_prompt(
-            codigo, resultado_capa3, contexto_rag, perfil, intento, historial,
-            enunciado_ejercicio=enunciado_ejercicio,
-            preguntas_sin_codigo=preguntas_sin_codigo,
+            codigo               = codigo,
+            resultado_capa3      = resultado_capa3,
+            contexto_rag         = contexto_rag,
+            perfil               = perfil,
+            intento              = intento,
+            historial            = historial,
+            enunciado_ejercicio  = enunciado_ejercicio,
+            preguntas_sin_codigo = preguntas_sin_codigo,
+            comunidad            = comunidad,   # ← NUEVO: pasa al constructor del prompt
         )
 
         resp  = self._modelo.generate_content(prompt)
