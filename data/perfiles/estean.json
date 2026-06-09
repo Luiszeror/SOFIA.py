@@ -1,0 +1,19 @@
+{
+  "estudiante_id": "estean",
+  "nombre": "Estean",
+  "semestre": 1,
+  "sesiones": 0,
+  "interacciones": 1,
+  "errores_por_concepto": {},
+  "intentos_por_concepto": {
+    "general": [
+      1
+    ]
+  },
+  "errores_frecuentes": [],
+  "intentos_promedio": 1.0,
+  "score_riesgo": 0,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 15:50",
+  "historial_errores": []
+}

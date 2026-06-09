@@ -1,0 +1,15 @@
+{
+  "estudiante_id": "maná",
+  "nombre": "Maná",
+  "semestre": 10,
+  "sesiones": 0,
+  "interacciones": 0,
+  "errores_por_concepto": {},
+  "intentos_por_concepto": {},
+  "errores_frecuentes": [],
+  "intentos_promedio": 0.0,
+  "score_riesgo": 0,
+  "en_alerta": false,
+  "ultima_sesion": "",
+  "historial_errores": []
+}

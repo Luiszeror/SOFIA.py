@@ -84,6 +84,8 @@ if not st.session_state.sesion_iniciada:
                     "ejercicio_idx":        0,
                     "esperando_resp":       False,
                     "preguntas_sin_codigo": 0,
+                    "corpus_mostrado":      False,  # True después de mostrar corpus por primera vez
+                    "ultimo_concepto_corpus": None, # concepto del último corpus mostrado
                 })
                 st.rerun()
     st.stop()
@@ -138,14 +140,34 @@ with col_chat:
     # Renderizar historial
     for msg in st.session_state.historial_chat:
         if msg["role"] == "assistant":
-            # Escapar markdown del corpus que se cuela en las respuestas
+            ex = msg.get("extra", {})
+
+            # Mostrar fragmento del corpus ANTES de la respuesta de SOFIA
+            fragmento_corpus = ex.get("fragmento_corpus", "")
+            fuentes_disp     = ex.get("fuentes", [])
+            if fuentes_disp and fragmento_corpus:
+                fuente = fuentes_disp[0]
+                st.markdown(f"""
+                <div style="background:#f0f9ff;border-left:3px solid #0ea5e9;
+                  border-radius:0 10px 10px 0;padding:.75rem 1rem;margin:.5rem 0;
+                  font-size:.88rem;color:#0c4a6e;line-height:1.6">
+                  <strong style="font-size:.78rem;text-transform:uppercase;
+                    letter-spacing:.05em;color:#0369a1">📖 Material del curso</strong><br>
+                  <em style="font-size:.8rem;color:#0369a1">{fuente}</em><br><br>
+                  {fragmento_corpus}
+                </div>""", unsafe_allow_html=True)
+            elif fuentes_disp:
+                # Mostrar solo las fuentes si no hay fragmento
+                fuentes_html = " ".join([f'<span class="fuente-tag">📖 {f}</span>' for f in fuentes_disp])
+                st.markdown(fuentes_html, unsafe_allow_html=True)
+
+            # Respuesta de SOFIA
             contenido_seguro = (msg["content"]
                 .replace("##", "")
                 .replace("# ", "")
             )
             st.markdown(f'<div class="msg-sofia">{contenido_seguro}</div>',
                         unsafe_allow_html=True)
-            ex = msg.get("extra", {})
 
             # Consola Python estilo terminal
             consola_val = ex.get("consola_output", "") or ex.get("stdout_codigo", "")
@@ -236,10 +258,12 @@ with col_chat:
                 idx = int(inp.strip()) - 1
                 if 0 <= idx < len(conceptos):
                     concepto = conceptos[idx]
-                    st.session_state.concepto_actual      = concepto
-                    st.session_state.ejercicio_idx        = 0
-                    st.session_state.intento_actual       = 1
-                    st.session_state.preguntas_sin_codigo = 0
+                    st.session_state.concepto_actual          = concepto
+                    st.session_state.ejercicio_idx            = 0
+                    st.session_state.intento_actual           = 1
+                    st.session_state.preguntas_sin_codigo     = 0
+                    st.session_state.corpus_mostrado          = False
+                    st.session_state.ultimo_concepto_corpus   = None
                     ej       = obtener_ejercicio(concepto, 0)
                     ejercicios = listar_ejercicios(concepto)
                     lista_ej = "\n".join([f"**{i+1}.** {e}"
@@ -346,10 +370,12 @@ with col_chat:
             texto = resp_txt.strip()
             agregar_msg("user", texto)
             if texto.lower() == "menu":
-                st.session_state.modo_actual         = None
-                st.session_state.concepto_actual     = None
-                st.session_state.intento_actual      = 1
-                st.session_state.preguntas_sin_codigo = 0
+                st.session_state.modo_actual              = None
+                st.session_state.concepto_actual          = None
+                st.session_state.intento_actual           = 1
+                st.session_state.preguntas_sin_codigo     = 0
+                st.session_state.corpus_mostrado          = False
+                st.session_state.ultimo_concepto_corpus   = None
                 agregar_msg("assistant", menu_txt())
             else:
                 # Incrementar contador de preguntas sin código
@@ -357,10 +383,17 @@ with col_chat:
                 psc = st.session_state.preguntas_sin_codigo
                 ej_act = obtener_ejercicio(concepto_actual, st.session_state.ejercicio_idx) if st.session_state.concepto_actual else None
 
+                # Detectar concepto de la pregunta — si el estudiante pregunta por strings
+                # estando en funciones, buscar en el corpus de strings
+                from capa2.retriever.retriever_rag import _detectar_concepto_query
+                concepto_pregunta = _detectar_concepto_query(texto)
+                if concepto_pregunta == "general":
+                    concepto_pregunta = concepto_actual  # fallback al concepto actual
+
                 with st.spinner("SOFIA responde..."):
                     r = orch.responder_pregunta(
                         pregunta             = texto,
-                        concepto_hint        = concepto_actual,
+                        concepto_hint        = concepto_pregunta,
                         estudiante_id        = st.session_state.estudiante_id,
                         nombre_estudiante    = nombre,
                         historial            = [{"role": m["role"], "content": m["content"]}
@@ -370,7 +403,10 @@ with col_chat:
                         enunciado_ejercicio  = ej_act,
                     )
                 agregar_msg("assistant", r["respuesta"],
-                            extra={"fuentes": r.get("fuentes", [])})
+                            extra={
+                                "fuentes":          r.get("fuentes", []),
+                                "fragmento_corpus": r.get("fragmento_corpus", ""),
+                            })
                 # Si SOFIA confirma que la respuesta fue correcta, bajar score
                 texto_resp = r["respuesta"].lower()
                 if any(p in texto_resp for p in ["correcto", "exacto", "excelente",
@@ -405,8 +441,14 @@ with col_chat:
                     historial=[{"role": m["role"], "content": m["content"]}
                                for m in st.session_state.historial_chat[-6:]],
                 )
+            fragmento_corpus = ""
+            if r.get("fragmentos"):
+                fragmento_corpus = r["fragmentos"][0].get("texto", "")[:400] + "..."
             agregar_msg("assistant", r["respuesta"],
-                        extra={"fuentes": r.get("fuentes", [])})
+                        extra={
+                            "fuentes":          r.get("fuentes", []),
+                            "fragmento_corpus": fragmento_corpus,
+                        })
             agregar_msg("assistant", menu_txt())
             st.session_state.modo_actual = None
             st.rerun()

@@ -1,0 +1,30 @@
+{
+  "estudiante_id": "manguey",
+  "nombre": "Manguey",
+  "semestre": 10,
+  "sesiones": 0,
+  "interacciones": 1,
+  "errores_por_concepto": {
+    "strings": 1
+  },
+  "intentos_por_concepto": {
+    "strings": [
+      1
+    ]
+  },
+  "errores_frecuentes": [
+    "strings"
+  ],
+  "intentos_promedio": 1.0,
+  "score_riesgo": 1.1,
+  "en_alerta": false,
+  "ultima_sesion": "2026-06-08 15:37",
+  "historial_errores": [
+    {
+      "concepto": "strings",
+      "tipo_error": "error_logico",
+      "intento": 1,
+      "timestamp": "2026-06-08 15:37"
+    }
+  ]
+}
